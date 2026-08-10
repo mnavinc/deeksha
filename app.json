@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Deeksha Journey",
+    "slug": "deeksha-journey",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "deekshajourney",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.deekshajourney.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Find nearby temples and pilgrimage checkpoints during your Yatra."
+      }
+    },
+    "android": {
+      "package": "com.deekshajourney.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Deeksha Journey to find nearby temples during your pilgrimage."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
