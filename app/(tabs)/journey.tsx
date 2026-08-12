@@ -3,6 +3,7 @@ import { AYYAPPA_JOURNEY } from '@/data/journeyCheckpoints';
 import { useAppStore } from '@/store/useAppStore';
 import { getCurrentDay } from '@/engines/deekshaEngine';
 import { colors, spacing } from '@/theme/colors';
+import { JourneyTrailMap } from '@/components/JourneyTrailMap';
 
 export default function JourneyScreen() {
   const enrollment = useAppStore((s) => s.enrollment);
@@ -12,7 +13,8 @@ export default function JourneyScreen() {
   const items = enrollment.deekshaId === 'ayyappa' ? AYYAPPA_JOURNEY : AYYAPPA_JOURNEY.slice(0, 6);
   return <ScrollView style={styles.page} contentContainerStyle={styles.content}>
     <Text style={styles.heading}>{enrollment.deekshaId === 'ayyappa' ? 'Your Sabarimala Journey' : 'Your Deeksha Journey'}</Text>
-    <Text style={styles.subtitle}>Follow your Guru and temple guidance for each milestone.</Text>
+    <Text style={styles.subtitle}>A living trail shaped by your Deeksha status. Follow Guru and temple guidance at every milestone.</Text>
+    <JourneyTrailMap checkpoints={items} currentDay={day} unlockedIds={enrollment.unlockedJourneyIds} />
     {items.map((item) => {
       const unlocked = enrollment.unlockedJourneyIds.includes(item.id) || (item.dayUnlock ?? Infinity) <= day;
       return <TouchableOpacity key={item.id} disabled={!unlocked} onPress={() => unlock(item.id)} style={[styles.card, unlocked && styles.unlocked]}>

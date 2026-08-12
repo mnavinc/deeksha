@@ -1,55 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '@/components/Button';
-import { useAppStore } from '@/store/useAppStore';
-import { colors, spacing } from '@/theme/colors';
-
-export default function ProfileScreen() {
-  const setProfile = useAppStore((s) => s.setProfile);
-  const [name, setName] = useState('');
-
-  const handleContinue = () => {
-    if (!name.trim()) return;
-    setProfile({
-      id: `user-${Date.now()}`,
-      name: name.trim(),
-      language: 'en',
-      pilgrimageCount: 0,
-      onboardingComplete: false,
-    });
-    router.push('/onboarding/deeksha-select');
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>What shall we call you, Swami?</Text>
-      <Text style={styles.subtitle}>Every devotee is addressed as Swami — a symbol of humility and equality.</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Your name"
-        placeholderTextColor={colors.textDim}
-        value={name}
-        onChangeText={setName}
-        autoFocus
-      />
-      <Button title="Continue" onPress={handleContinue} disabled={!name.trim()} />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg, paddingTop: 40 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '700', marginBottom: spacing.sm },
-  subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20, marginBottom: spacing.xl },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.md,
-    color: colors.text,
-    fontSize: 16,
-    marginBottom: spacing.lg,
-  },
-});
+import { Button } from '@/components/Button'; import { useAppStore } from '@/store/useAppStore'; import { colors, spacing } from '@/theme/colors'; import { translate, type AppLanguage } from '@/i18n';
+export default function ProfileScreen(){const setProfile=useAppStore(s=>s.setProfile);const existing=useAppStore(s=>s.profile);const [name,setName]=useState(existing?.name??'');const [language,setLanguage]=useState<AppLanguage>(existing?.language??'te');const title=language==='te'?'మిమ్మల్ని ఏమని పిలవాలి, స్వామి?':'What shall we call you, Swami?';const subtitle=language==='te'?'ప్రతి వ్యక్తిని స్వామి అని పిలవడం సమానత్వం మరియు గౌరవానికి గుర్తు.':'Every person is addressed as Swami — a symbol of humility and equality.';const continueText=translate(language,'continue');return <View style={styles.container}><Text style={styles.title}>{title}</Text><Text style={styles.subtitle}>{subtitle}</Text><View style={styles.languageRow}>{(['te','en'] as const).map(code=><TouchableOpacity key={code} onPress={()=>setLanguage(code)} style={[styles.language,language===code&&styles.languageActive]}><Text style={[styles.languageText,language===code&&styles.languageTextActive]}>{translate(code,code==='te'?'telugu':'english')}</Text></TouchableOpacity>)}</View><TextInput style={styles.input} placeholder={language==='te'?'మీ పేరు':'Your name'} placeholderTextColor={colors.textDim} value={name} onChangeText={setName} autoFocus/><Button title={continueText} onPress={()=>{if(name.trim()){setProfile({id:existing?.id??`user-${Date.now()}`,name:name.trim(),language,pilgrimageCount:existing?.pilgrimageCount??0,onboardingComplete:false});router.push('/onboarding/deeksha-select')}}} disabled={!name.trim()}/></View>}
+const styles=StyleSheet.create({container:{flex:1,padding:spacing.lg,paddingTop:40},title:{color:colors.text,fontSize:24,fontWeight:'700',marginBottom:spacing.sm},subtitle:{color:colors.textMuted,fontSize:14,lineHeight:20,marginBottom:spacing.md},languageRow:{flexDirection:'row',gap:spacing.sm,marginBottom:spacing.md},language:{borderWidth:1,borderColor:colors.border,borderRadius:18,paddingHorizontal:14,paddingVertical:8},languageActive:{borderColor:colors.primary,backgroundColor:'#F0B42920'},languageText:{color:colors.textMuted,fontSize:13},languageTextActive:{color:colors.primary,fontWeight:'700'},input:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,borderRadius:12,padding:spacing.md,color:colors.text,fontSize:16,marginBottom:spacing.lg}});

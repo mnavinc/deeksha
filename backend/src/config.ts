@@ -1,4 +1,10 @@
+import { config } from 'dotenv';
+import { resolve } from 'node:path';
 import { z } from 'zod';
+
+// Local development keeps one shared .env at the repository root. Production
+// platforms inject these values directly and are not overridden by this file.
+config({ path: resolve(process.cwd(), '../.env'), override: false });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

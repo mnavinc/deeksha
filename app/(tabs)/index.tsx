@@ -8,8 +8,10 @@ import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { ProgressBar } from '@/components/ProgressBar';
 import { DailyChecklist } from '@/components/DailyChecklist';
 import { colors, spacing } from '@/theme/colors';
+import { useI18n } from '@/i18n';
 
 export default function HomeScreen() {
+  const { t } = useI18n();
   const profile = useAppStore((s) => s.profile);
   const enrollment = useAppStore((s) => s.enrollment);
   const totalPoints = useAppStore((s) => s.totalPoints);
@@ -22,9 +24,9 @@ export default function HomeScreen() {
   if (!enrollment || !profile) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No active Deeksha</Text>
+        <Text style={styles.emptyText}>{t('deeksha')} — {t('active')}</Text>
         <TouchableOpacity onPress={() => router.push('/onboarding/welcome')}>
-          <Text style={styles.link}>Start your journey</Text>
+          <Text style={styles.link}>{t('startJourney')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -52,15 +54,15 @@ export default function HomeScreen() {
       <View style={styles.dayCard}>
         <Text style={styles.deekshaName}>{deeksha.name.toUpperCase()}</Text>
         <Text style={styles.dayText}>
-          Day {day} / {enrollment.durationDays}
+          {t('day')} {day} / {enrollment.durationDays}
         </Text>
         <ProgressBar progress={progress} color={colors.primary} />
         <Text style={styles.remaining}>{remaining} days until pilgrimage readiness</Text>
       </View>
 
       <View style={styles.pointsRow}>
-        <Text style={styles.pointsToday}>+{todayPoints} today</Text>
-        <Text style={styles.pointsTotal}>{totalPoints} total points</Text>
+        <Text style={styles.pointsToday}>+{todayPoints} {t('today')}</Text>
+        <Text style={styles.pointsTotal}>{totalPoints} {t('points')}</Text>
       </View>
 
       <DailyChecklist
@@ -72,7 +74,7 @@ export default function HomeScreen() {
 
       {groups.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Group</Text>
+          <Text style={styles.sectionTitle}>{t('groups')}</Text>
           <Text style={styles.sectionText}>
             {groups[0].name} · {groups[0].members.length} members
           </Text>
@@ -85,15 +87,15 @@ export default function HomeScreen() {
       <View style={styles.quickActions}>
         <TouchableOpacity style={styles.action} onPress={() => router.push('/(tabs)/journey')}>
           <Text style={styles.actionIcon}>🗺️</Text>
-          <Text style={styles.actionLabel}>Journey Path</Text>
+          <Text style={styles.actionLabel}>{t('journey')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.action} onPress={() => router.push('/(tabs)/map')}>
           <Text style={styles.actionIcon}>🛕</Text>
-          <Text style={styles.actionLabel}>Temples</Text>
+          <Text style={styles.actionLabel}>{t('temples')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.action} onPress={() => router.push('/(tabs)/groups')}>
           <Text style={styles.actionIcon}>👥</Text>
-          <Text style={styles.actionLabel}>Groups</Text>
+          <Text style={styles.actionLabel}>{t('groups')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

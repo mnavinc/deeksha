@@ -26,6 +26,9 @@ export interface PilgrimageGroup {
   route?: string;
   members: GroupMember[];
   announcements: { id: string; text: string; createdAt: string }[];
+  messages: { id: string; author: string; text: string; createdAt: string }[];
+  guruName?: string;
+  guruApprovalCount: number;
 }
 
 export interface UserProfile {
@@ -39,6 +42,7 @@ export interface UserProfile {
 interface AppState {
   profile: UserProfile | null;
   enrollment: DeekshaEnrollment | null;
+  journeyHistory: DeekshaEnrollment[];
   totalPoints: number;
   unlockedAchievements: string[];
   savedTempleIds: string[];
@@ -48,6 +52,7 @@ interface AppState {
   personalBudget: number;
 
   setProfile: (profile: UserProfile) => void;
+  setLanguage: (language: UserProfile['language']) => void;
   startDeeksha: (params: {
     deekshaId: DeekshaId;
     pilgrimageCenter: string;
@@ -66,6 +71,11 @@ interface AppState {
   addExpense: (expense: Expense) => void;
   addSettlement: (settlement: Settlement) => void;
   setPersonalBudget: (amount: number) => void;
+  addGroupMember: (groupId: string, name: string) => void;
+  removeGroupMember: (groupId: string, userId: string) => void;
+  setGroupMemberRole: (groupId: string, userId: string, role: GroupMember['role']) => void;
+  addGroupMessage: (groupId: string, text: string) => void;
+  nominateGroupGuru: (groupId: string, name: string) => void;
   getTodayLog: () => DailyLog;
   refreshGamification: () => void;
 }
@@ -79,6 +89,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       profile: null,
       enrollment: null,
+      journeyHistory: [],
       totalPoints: 0,
       unlockedAchievements: [],
       savedTempleIds: [],
@@ -88,6 +99,7 @@ export const useAppStore = create<AppState>()(
       personalBudget: 8000,
 
       setProfile: (profile) => set({ profile }),
+      setLanguage: (language) => { const profile=get().profile; if (profile) set({ profile: { ...profile, language } }); },
 
       startDeeksha: (params) => {
         const enrollment: DeekshaEnrollment = {
@@ -180,8 +192,10 @@ export const useAppStore = create<AppState>()(
       completeDeeksha: () => {
         const { enrollment, profile } = get();
         if (!enrollment) return;
+        const completedEnrollment = { ...enrollment, status: 'completed' as const };
         set({
-          enrollment: { ...enrollment, status: 'completed' },
+          enrollment: completedEnrollment,
+          journeyHistory: [...get().journeyHistory.filter((item) => item.id !== enrollment.id), completedEnrollment],
           profile: profile
             ? { ...profile, pilgrimageCount: profile.pilgrimageCount + 1, onboardingComplete: true }
             : profile,
@@ -205,6 +219,8 @@ export const useAppStore = create<AppState>()(
             ? [{ userId: profile.id, name: profile.name, role: 'GROUP_ADMIN' }]
             : [],
           announcements: [],
+          messages: [],
+          guruApprovalCount: 0,
         };
         set({ groups: [...groups, group] });
       },
@@ -219,6 +235,11 @@ export const useAppStore = create<AppState>()(
       },
 
       setPersonalBudget: (amount) => set({ personalBudget: amount }),
+      addGroupMember: (groupId, name) => { const profile=get().profile; if (!profile || !name.trim()) return; set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:[...g.members,{userId:generateId(),name:name.trim(),role:'MEMBER'}]}:g) }); },
+      setGroupMemberRole: (groupId,userId,role) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:g.members.map(m=>m.userId===userId?{...m,role}:m)}:g) }),
+      removeGroupMember: (groupId,userId) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:g.members.filter(m=>m.userId!==userId),guruApprovalCount:Math.min(g.guruApprovalCount,Math.max(0,g.members.length-2))}:g) }),
+      addGroupMessage: (groupId,text) => { const profile=get().profile; if(!profile||!text.trim())return; set({groups:get().groups.map(g=>g.id===groupId?{...g,messages:[...(g.messages??[]),{id:generateId(),author:profile.name,text:text.trim(),createdAt:new Date().toISOString()}]}:g)}); },
+      nominateGroupGuru: (groupId,name) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,guruName:name,guruApprovalCount:Math.max(0,g.members.length-1),announcements:[...(g.announcements??[]),{id:generateId(),text:`Guru approval requested for ${name}`,createdAt:new Date().toISOString()}]}:g) }),
 
       refreshGamification: () => {
         const { enrollment, expenses, profile } = get();
