@@ -3,8 +3,9 @@ import { router } from 'expo-router';
 import { DEEKSHA_TYPES, type DeekshaId } from '@/data/deekshaTypes';
 import { MULTI_DEEKSHA_WARNING } from '@/engines/contentEngine';
 import { colors, spacing } from '@/theme/colors';
+import { useI18n } from '@/i18n';
 
-const DEeksha_ICONS: Record<DeekshaId, string> = {
+const DEEKSHA_ICONS: Record<DeekshaId, string> = {
   ayyappa: '🛕',
   bhavani: '🔴',
   govinda: '💛',
@@ -14,9 +15,11 @@ const DEeksha_ICONS: Record<DeekshaId, string> = {
 };
 
 export default function DeekshaSelectScreen() {
+  const { t } = useI18n();
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Which Deeksha are you observing?</Text>
+      <Text style={styles.title}>{t('whichDeeksha')}</Text>
       <Text style={styles.subtitle}>{MULTI_DEEKSHA_WARNING}</Text>
       <View style={styles.list}>
         {DEEKSHA_TYPES.map((d) => (
@@ -31,14 +34,14 @@ export default function DeekshaSelectScreen() {
             }
             activeOpacity={0.7}
           >
-            <Text style={styles.icon}>{DEeksha_ICONS[d.id]}</Text>
+            <Text style={styles.icon}>{DEEKSHA_ICONS[d.id]}</Text>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{d.name}</Text>
               <Text style={styles.cardDeity}>{d.deity}</Text>
               <Text style={styles.cardMeta}>
                 {d.rules.durationOptions.length > 0
-                  ? `${d.rules.durationOptions.join(' / ')} days`
-                  : 'Confirm with temple'}
+                  ? `${d.rules.durationOptions.join(' / ')} ${t('days')}`
+                  : t('confirmWithTemple')}
                 {d.rules.specialDestination ? ` · ${d.rules.specialDestination}` : ''}
               </Text>
             </View>
@@ -52,23 +55,18 @@ export default function DeekshaSelectScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.lg, paddingBottom: 40 },
-  title: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
+  title: { color: colors.text, fontSize: 22, fontWeight: '800', marginBottom: spacing.sm },
   subtitle: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: spacing.lg },
   list: { gap: spacing.sm },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: 14, borderWidth: 1, borderColor: colors.border, gap: spacing.md,
   },
   icon: { fontSize: 32 },
   cardContent: { flex: 1 },
-  cardTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  cardTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   cardDeity: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  cardMeta: { color: colors.primary, fontSize: 12, marginTop: 4 },
+  cardMeta: { color: colors.primary, fontSize: 12, marginTop: 4, fontWeight: '500' },
   arrow: { color: colors.textMuted, fontSize: 24 },
 });

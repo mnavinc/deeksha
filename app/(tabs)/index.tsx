@@ -24,6 +24,7 @@ export default function HomeScreen() {
   if (!enrollment || !profile) {
     return (
       <View style={styles.empty}>
+        <Text style={styles.emptyIcon}>🛕</Text>
         <Text style={styles.emptyText}>{t('deeksha')} — {t('active')}</Text>
         <TouchableOpacity onPress={() => router.push('/onboarding/welcome')}>
           <Text style={styles.link}>{t('startJourney')}</Text>
@@ -57,7 +58,7 @@ export default function HomeScreen() {
           {t('day')} {day} / {enrollment.durationDays}
         </Text>
         <ProgressBar progress={progress} color={colors.primary} />
-        <Text style={styles.remaining}>{remaining} days until pilgrimage readiness</Text>
+        <Text style={styles.remaining}>{remaining} {t('daysUntilReady')}</Text>
       </View>
 
       <View style={styles.pointsRow}>
@@ -76,10 +77,10 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('groups')}</Text>
           <Text style={styles.sectionText}>
-            {groups[0].name} · {groups[0].members.length} members
+            {groups[0].name} · {groups[0].members.length} {t('members')}
           </Text>
           {groupTotal > 0 && (
-            <Text style={styles.sectionMeta}>Group expenses: ₹{groupTotal.toLocaleString('en-IN')}</Text>
+            <Text style={styles.sectionMeta}>{t('groupExpenses')}: ₹{groupTotal.toLocaleString('en-IN')}</Text>
           )}
         </View>
       )}
@@ -105,44 +106,36 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md, paddingBottom: 40, gap: spacing.md },
-  saranam: { color: colors.primary, textAlign: 'center', fontSize: 13, fontWeight: '500' },
+  saranam: { color: colors.primary, textAlign: 'center', fontSize: 13, fontWeight: '600' },
   dayCard: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
+    backgroundColor: colors.surface, padding: spacing.lg,
+    borderRadius: 16, borderWidth: 1, borderColor: colors.border, gap: spacing.sm,
   },
-  deekshaName: { color: colors.textMuted, fontSize: 11, letterSpacing: 1 },
-  dayText: { color: colors.text, fontSize: 28, fontWeight: '700' },
+  deekshaName: { color: colors.textMuted, fontSize: 11, letterSpacing: 1.5 },
+  dayText: { color: colors.text, fontSize: 28, fontWeight: '800' },
   remaining: { color: colors.textMuted, fontSize: 12 },
   pointsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  pointsToday: { color: colors.success, fontWeight: '600' },
-  pointsTotal: { color: colors.primary, fontWeight: '600' },
+  pointsToday: { color: colors.success, fontWeight: '700' },
+  pointsTotal: { color: colors.primary, fontWeight: '700' },
   section: {
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: 12, borderWidth: 1, borderColor: colors.border,
   },
-  sectionTitle: { color: colors.text, fontWeight: '600', marginBottom: 4 },
+  sectionTitle: { color: colors.text, fontWeight: '700', marginBottom: 4 },
   sectionText: { color: colors.textMuted, fontSize: 13 },
-  sectionMeta: { color: colors.primary, fontSize: 13, marginTop: 4 },
+  sectionMeta: { color: colors.primary, fontSize: 13, marginTop: 4, fontWeight: '500' },
   quickActions: { flexDirection: 'row', gap: spacing.sm },
   action: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    flex: 1, backgroundColor: colors.surface, padding: spacing.md,
+    borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border,
   },
   actionIcon: { fontSize: 24, marginBottom: 4 },
-  actionLabel: { color: colors.textMuted, fontSize: 11 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  actionLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '500' },
+  empty: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.background, gap: 12,
+  },
+  emptyIcon: { fontSize: 56 },
   emptyText: { color: colors.textMuted, fontSize: 16 },
-  link: { color: colors.primary, marginTop: spacing.md, fontSize: 16 },
+  link: { color: colors.primary, fontSize: 16, fontWeight: '600' },
 });

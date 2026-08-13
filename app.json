@@ -16,7 +16,10 @@
     },
     "android": {
       "package": "com.deekshajourney.app",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -25,7 +28,9 @@
         {
           "locationWhenInUsePermission": "Allow Deeksha Journey to find nearby temples during your pilgrimage."
         }
-      ]
+      ],
+      "expo-localization",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

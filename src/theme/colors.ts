@@ -1,4 +1,7 @@
-export const colors = {
+import { useColorScheme } from 'react-native';
+import { useAppStore } from '@/store/useAppStore';
+
+export const darkColors = {
   background: '#0D1117',
   surface: '#161B22',
   surfaceElevated: '#21262D',
@@ -15,6 +18,34 @@ export const colors = {
   ayyappaBlack: '#1a1a2e',
   accent: '#58A6FF',
 };
+
+export const lightColors = {
+  background: '#F6F8FA',
+  surface: '#FFFFFF',
+  surfaceElevated: '#EAEEF2',
+  border: '#D0D7DE',
+  text: '#1F2328',
+  textMuted: '#57606A',
+  textDim: '#6E7781',
+  primary: '#D49000',
+  primaryDark: '#B37800',
+  success: '#1F883D',
+  warning: '#9A6700',
+  error: '#CF222E',
+  ayyappaGold: '#D49000',
+  ayyappaBlack: '#1a1a2e',
+  accent: '#0969DA',
+};
+
+export const colors = darkColors;
+
+export function useThemeColors() {
+  const theme = useAppStore((s) => s.theme);
+  const systemScheme = useColorScheme();
+
+  const activeTheme = theme === 'system' ? systemScheme ?? 'dark' : theme;
+  return activeTheme === 'light' ? lightColors : darkColors;
+}
 
 export const spacing = {
   xs: 4,

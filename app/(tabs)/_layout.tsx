@@ -13,7 +13,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
+          height: 60,
+          paddingBottom: 8,
         },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
       }}
@@ -49,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: 'Community',
+          title: t('community'),
           tabBarIcon: ({ color, size }) => <Ionicons name="people-circle" size={size} color={color} />,
         }}
       />

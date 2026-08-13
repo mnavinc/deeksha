@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useEffect, useState } from 'react';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DeekshaId } from '@/data/deekshaTypes';
@@ -50,6 +51,12 @@ interface AppState {
   expenses: Expense[];
   settlements: Settlement[];
   personalBudget: number;
+  theme: 'system' | 'light' | 'dark';
+  notificationsEnabled: boolean;
+
+  setTheme: (theme: 'system' | 'light' | 'dark') => void;
+  toggleNotifications: () => void;
+  signOut: () => void;
 
   setProfile: (profile: UserProfile) => void;
   setLanguage: (language: UserProfile['language']) => void;
@@ -97,9 +104,18 @@ export const useAppStore = create<AppState>()(
       expenses: [],
       settlements: [],
       personalBudget: 8000,
+      theme: 'system',
+      notificationsEnabled: true,
+
+      setTheme: (theme) => set({ theme }),
+      toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
+      signOut: () => set({ profile: null, enrollment: null }),
 
       setProfile: (profile) => set({ profile }),
-      setLanguage: (language) => { const profile=get().profile; if (profile) set({ profile: { ...profile, language } }); },
+      setLanguage: (language) => {
+        const profile = get().profile;
+        if (profile) set({ profile: { ...profile, language } });
+      },
 
       startDeeksha: (params) => {
         const enrollment: DeekshaEnrollment = {
@@ -235,11 +251,28 @@ export const useAppStore = create<AppState>()(
       },
 
       setPersonalBudget: (amount) => set({ personalBudget: amount }),
-      addGroupMember: (groupId, name) => { const profile=get().profile; if (!profile || !name.trim()) return; set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:[...g.members,{userId:generateId(),name:name.trim(),role:'MEMBER'}]}:g) }); },
-      setGroupMemberRole: (groupId,userId,role) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:g.members.map(m=>m.userId===userId?{...m,role}:m)}:g) }),
-      removeGroupMember: (groupId,userId) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,members:g.members.filter(m=>m.userId!==userId),guruApprovalCount:Math.min(g.guruApprovalCount,Math.max(0,g.members.length-2))}:g) }),
-      addGroupMessage: (groupId,text) => { const profile=get().profile; if(!profile||!text.trim())return; set({groups:get().groups.map(g=>g.id===groupId?{...g,messages:[...(g.messages??[]),{id:generateId(),author:profile.name,text:text.trim(),createdAt:new Date().toISOString()}]}:g)}); },
-      nominateGroupGuru: (groupId,name) => set({ groups:get().groups.map(g=>g.id===groupId?{...g,guruName:name,guruApprovalCount:Math.max(0,g.members.length-1),announcements:[...(g.announcements??[]),{id:generateId(),text:`Guru approval requested for ${name}`,createdAt:new Date().toISOString()}]}:g) }),
+      addGroupMember: (groupId, name) => {
+        const profile = get().profile;
+        if (!profile || !name.trim()) return;
+        set({
+          groups: get().groups.map((g) =>
+            g.id === groupId
+              ? { ...g, members: [...g.members, { userId: generateId(), name: name.trim(), role: 'MEMBER' }] }
+              : g
+          ),
+        });
+      },
+      setGroupMemberRole: (groupId, userId, role) =>
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, members: g.members.map((m) => m.userId === userId ? { ...m, role } : m) } : g) }),
+      removeGroupMember: (groupId, userId) =>
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, members: g.members.filter((m) => m.userId !== userId), guruApprovalCount: Math.min(g.guruApprovalCount, Math.max(0, g.members.length - 2)) } : g) }),
+      addGroupMessage: (groupId, text) => {
+        const profile = get().profile;
+        if (!profile || !text.trim()) return;
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, messages: [...(g.messages ?? []), { id: generateId(), author: profile.name, text: text.trim(), createdAt: new Date().toISOString() }] } : g) });
+      },
+      nominateGroupGuru: (groupId, name) =>
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, guruName: name, guruApprovalCount: Math.max(0, g.members.length - 1), announcements: [...(g.announcements ?? []), { id: generateId(), text: `Guru approval requested for ${name}`, createdAt: new Date().toISOString() }] } : g) }),
 
       refreshGamification: () => {
         const { enrollment, expenses, profile } = get();
@@ -278,3 +311,14 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+/** Returns true once Zustand has finished hydrating from AsyncStorage */
+export function useHasHydrated() {
+  const [hydrated, setHydrated] = useState(useAppStore.persist.hasHydrated());
+  useEffect(() => {
+    const unsub = useAppStore.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(useAppStore.persist.hasHydrated());
+    return unsub;
+  }, []);
+  return hydrated;
+}
