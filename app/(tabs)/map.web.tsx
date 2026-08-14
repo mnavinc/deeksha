@@ -1,20 +1,25 @@
 /**
- * map.web.tsx — OpenStreetMap / Leaflet web fallback using React Native WebView / iframe & OpenStreetMap embed,
- * providing a fully functional interactive map alternative to react-native-maps on web.
+ * map.web.tsx — OpenStreetMap / Leaflet web fallback using responsive iframe,
+ * providing a clean, responsive interactive map alternative on web.
  */
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DeityFilter, SAMPLE_TEMPLES, getNearbyTemples } from '@/data/temples';
+import { DeityFilter, SAMPLE_TEMPLES } from '@/data/temples';
 import { useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
+import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
+import { HeaderNav } from '@/components/HeaderNav';
 
 const filters: Array<DeityFilter | 'All'> = ['All', 'Ayyappa', 'Durga', 'Venkateswara', 'Shiva', 'Hanuman', 'Nookambika'];
 
 export default function MapScreen() {
   const { t } = useI18n();
   const colors = useThemeColors();
+  const theme = useAppStore((s) => s.theme);
+  const activeTheme = theme === 'system' ? 'dark' : theme;
+
   const [filter, setFilter] = useState<DeityFilter | 'All'>('All');
   const [selectedTemple, setSelectedTemple] = useState<typeof SAMPLE_TEMPLES[0] | null>(SAMPLE_TEMPLES[0]);
   const saved = useAppStore((s) => s.savedTempleIds);
@@ -25,7 +30,6 @@ export default function MapScreen() {
     [filter]
   );
 
-  // Generate OpenStreetMap iframe embed URL based on selected temple or default center (Sabarimala/South India)
   const mapCenter = selectedTemple
     ? `${selectedTemple.latitude - 0.01}%2C${selectedTemple.longitude - 0.02}%2C${selectedTemple.latitude + 0.01}%2C${selectedTemple.longitude + 0.02}`
     : `9.42%2C77.05%2C9.46%2C77.10`;
@@ -36,12 +40,12 @@ export default function MapScreen() {
 
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
+      <HeaderNav />
+
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View>
-          <Text style={[styles.heading, { color: colors.text }]}>{t('temples')}</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('discoverTemples')}</Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={[styles.heading, { color: colors.text }]}>{t('temples')}</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('discoverTemples')}</Text>
       </View>
 
       {/* Deity Filters */}
@@ -64,14 +68,19 @@ export default function MapScreen() {
       </ScrollView>
 
       {/* Web Interactive Map — OpenStreetMap Embed */}
-      <View style={[styles.mapContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-        {/* Render OpenStreetMap inside standard web iframe */}
+      <View
+        style={[
+          styles.mapContainer,
+          getClayStyle(activeTheme, 'medium'),
+          { borderColor: colors.border, backgroundColor: colors.surface },
+        ]}
+      >
         {typeof window !== 'undefined' ? (
           <iframe
             title="OpenStreetMap Web View"
             width="100%"
             height="100%"
-            style={{ border: 0, borderRadius: 12 }}
+            style={{ border: 0, borderRadius: 16 }}
             loading="lazy"
             src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapCenter}&layer=mapnik${mapMarker}`}
           />
@@ -93,6 +102,7 @@ export default function MapScreen() {
               onPress={() => setSelectedTemple(temple)}
               style={[
                 styles.card,
+                getClayStyle(activeTheme, 'low'),
                 { backgroundColor: colors.surface, borderColor: isSelected ? colors.primary : colors.border },
                 isSelected && { borderWidth: 2 },
               ]}
@@ -134,20 +144,26 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   header: {
-    padding: spacing.md, borderBottomWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    gap: 2,
   },
   heading: { fontSize: 22, fontWeight: '800' },
-  subtitle: { fontSize: 12, marginTop: 3 },
+  subtitle: { fontSize: 12 },
   filters: { gap: 8, paddingHorizontal: spacing.md, paddingVertical: 10 },
   filter: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderRadius: 20 },
   filterText: { fontSize: 12 },
   mapContainer: {
-    height: 220, marginHorizontal: spacing.md, borderRadius: 14, borderWidth: 1, overflow: 'hidden',
+    height: 220,
+    marginHorizontal: spacing.md,
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   fallbackBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: spacing.md, gap: spacing.md, paddingBottom: 40 },
+  content: { padding: spacing.md, gap: spacing.md, paddingBottom: 60 },
   card: {
-    borderWidth: 1, borderRadius: 14, padding: spacing.md, gap: 10,
+    borderWidth: 1, borderRadius: 20, padding: spacing.md, gap: 10,
   },
   cardTop: { flexDirection: 'row', gap: 12 },
   copy: { flex: 1 },

@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { AYYAPPA_JOURNEY } from '@/data/journeyCheckpoints';
 import { useAppStore } from '@/store/useAppStore';
 import { getCurrentDay } from '@/engines/deekshaEngine';
-import { colors, spacing } from '@/theme/colors';
+import { useThemeColors, spacing } from '@/theme/colors';
+import { getClayStyle } from '@/theme/claymorphism';
 import { JourneyTrailMap } from '@/components/JourneyTrailMap';
+import { HeaderNav } from '@/components/HeaderNav';
 import { useI18n } from '@/i18n';
 
 type ViewMode = 'map' | 'timeline';
@@ -14,13 +16,20 @@ export default function JourneyScreen() {
   const enrollment = useAppStore((s) => s.enrollment);
   const unlock = useAppStore((s) => s.unlockJourneyCheckpoint);
   const { t } = useI18n();
+  const colors = useThemeColors();
+  const theme = useAppStore((s) => s.theme);
+  const activeTheme = theme === 'system' ? 'dark' : theme;
+
   const [viewMode, setViewMode] = useState<ViewMode>('map');
 
   if (!enrollment) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyIcon}>🗺️</Text>
-        <Text style={styles.emptyText}>{t('startDeekshaPrompt')}</Text>
+      <View style={[styles.empty, { backgroundColor: colors.background }]}>
+        <HeaderNav />
+        <View style={styles.emptyCenter}>
+          <Text style={styles.emptyIcon}>🗺️</Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('startDeekshaPrompt')}</Text>
+        </View>
       </View>
     );
   }
@@ -29,32 +38,36 @@ export default function JourneyScreen() {
   const items = enrollment.deekshaId === 'ayyappa' ? AYYAPPA_JOURNEY : AYYAPPA_JOURNEY.slice(0, 6);
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, { backgroundColor: colors.background }]}>
+      <HeaderNav />
+
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerText}>
-          <Text style={styles.heading}>
+          <Text style={[styles.heading, { color: colors.text }]}>
             {enrollment.deekshaId === 'ayyappa' ? t('journeyTitle') : t('trail')}
           </Text>
-          <Text style={styles.subtitle}>{t('trailHint')}</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('trailHint')}</Text>
         </View>
+
         {/* View Toggle */}
-        <View style={styles.toggle}>
+        <View style={[styles.toggle, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.toggleBtn, viewMode === 'map' && styles.toggleActive]}
+            style={[styles.toggleBtn, viewMode === 'map' && { backgroundColor: colors.primary }]}
             onPress={() => setViewMode('map')}
           >
-            <Ionicons name="map" size={16} color={viewMode === 'map' ? colors.background : colors.textMuted} />
-            <Text style={[styles.toggleText, viewMode === 'map' && styles.toggleTextActive]}>
+            <Ionicons name="map" size={16} color={viewMode === 'map' ? '#0D1117' : colors.textMuted} />
+            <Text style={[styles.toggleText, { color: colors.textMuted }, viewMode === 'map' && { color: '#0D1117', fontWeight: '800' }]}>
               {t('journeyViewMap')}
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.toggleBtn, viewMode === 'timeline' && styles.toggleActive]}
+            style={[styles.toggleBtn, viewMode === 'timeline' && { backgroundColor: colors.primary }]}
             onPress={() => setViewMode('timeline')}
           >
-            <Ionicons name="list" size={16} color={viewMode === 'timeline' ? colors.background : colors.textMuted} />
-            <Text style={[styles.toggleText, viewMode === 'timeline' && styles.toggleTextActive]}>
+            <Ionicons name="list" size={16} color={viewMode === 'timeline' ? '#0D1117' : colors.textMuted} />
+            <Text style={[styles.toggleText, { color: colors.textMuted }, viewMode === 'timeline' && { color: '#0D1117', fontWeight: '800' }]}>
               {t('journeyViewTimeline')}
             </Text>
           </TouchableOpacity>
@@ -70,7 +83,7 @@ export default function JourneyScreen() {
               currentDay={day}
               unlockedIds={enrollment.unlockedJourneyIds}
             />
-            <Text style={styles.note}>{t('traditionalNote')}</Text>
+            <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
           </>
         ) : (
           /* ── TIMELINE VIEW ── */
@@ -96,24 +109,32 @@ export default function JourneyScreen() {
                 >
                   {/* Connector line */}
                   <View style={styles.connectorCol}>
-                    <View style={[styles.dot, unlocked ? styles.dotUnlocked : styles.dotLocked]} />
-                    {!isLast && <View style={[styles.connector, unlocked && styles.connectorUnlocked]} />}
+                    <View style={[styles.dot, unlocked ? { backgroundColor: colors.primary, borderColor: '#FFFBE6' } : { backgroundColor: '#314B42', borderColor: colors.border }]} />
+                    {!isLast && <View style={[styles.connector, { backgroundColor: colors.border }, unlocked && { backgroundColor: colors.primary, opacity: 0.4 }]} />}
                   </View>
+
                   {/* Card */}
-                  <View style={[styles.timelineCard, unlocked && styles.timelineCardUnlocked, !unlocked && styles.timelineCardLocked]}>
+                  <View
+                    style={[
+                      styles.timelineCard,
+                      getClayStyle(activeTheme, unlocked ? 'medium' : 'low'),
+                      { backgroundColor: colors.surface, borderColor: unlocked ? colors.primary : colors.border },
+                      !unlocked && { opacity: 0.5 },
+                    ]}
+                  >
                     <View style={styles.timelineTop}>
                       <Text style={styles.timelineIcon}>{unlocked ? item.icon : '🔒'}</Text>
                       <View style={styles.timelineCopy}>
-                        <Text style={[styles.timelineTitle, !unlocked && styles.dimText]}>{title}</Text>
-                        <Text style={styles.timelinePhase}>
+                        <Text style={[styles.timelineTitle, { color: unlocked ? colors.text : colors.textDim }]}>{title}</Text>
+                        <Text style={[styles.timelinePhase, { color: colors.textDim }]}>
                           {phaseName} ·{' '}
-                          <Text style={styles.tag}>
+                          <Text style={{ color: colors.primary, fontWeight: '600' }}>
                             {item.category === 'OFFICIAL' ? t('officialGuidance') : t('traditionalPractice')}
                           </Text>
                         </Text>
                       </View>
                     </View>
-                    <Text style={[styles.timelineDesc, !unlocked && styles.dimText]}>
+                    <Text style={[styles.timelineDesc, { color: unlocked ? colors.textMuted : colors.textDim }]}>
                       {unlocked
                         ? description
                         : item.dayUnlock
@@ -124,7 +145,7 @@ export default function JourneyScreen() {
                 </TouchableOpacity>
               );
             })}
-            <Text style={styles.note}>{t('traditionalNote')}</Text>
+            <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
           </>
         )}
       </ScrollView>
@@ -133,62 +154,45 @@ export default function JourneyScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.background },
+  page: { flex: 1 },
   header: {
     padding: spacing.md,
-    paddingTop: spacing.sm,
     gap: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   headerText: { gap: 2 },
-  heading: { color: colors.text, fontSize: 20, fontWeight: '800' },
-  subtitle: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
+  heading: { fontSize: 20, fontWeight: '800' },
+  subtitle: { fontSize: 12, lineHeight: 17 },
   toggle: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 3,
     borderWidth: 1,
-    borderColor: colors.border,
     alignSelf: 'flex-start',
   },
   toggleBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10,
   },
-  toggleActive: { backgroundColor: colors.primary },
-  toggleText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
-  toggleTextActive: { color: colors.background, fontWeight: '700' },
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 40 },
-  // Timeline
+  toggleText: { fontSize: 13, fontWeight: '600' },
+  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 60 },
   timelineRow: { flexDirection: 'row', gap: 12 },
   connectorCol: { alignItems: 'center', width: 20 },
-  dot: { width: 20, height: 20, borderRadius: 10, zIndex: 1 },
-  dotUnlocked: { backgroundColor: colors.primary, borderWidth: 2, borderColor: '#FFFBE6' },
-  dotLocked: { backgroundColor: '#314B42', borderWidth: 2, borderColor: colors.border },
-  connector: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: 2 },
-  connectorUnlocked: { backgroundColor: colors.primary, opacity: 0.4 },
+  dot: { width: 20, height: 20, borderRadius: 10, zIndex: 1, borderWidth: 2 },
+  connector: { width: 2, flex: 1, marginTop: 2 },
   timelineCard: {
-    flex: 1, padding: spacing.md, borderRadius: 14,
-    borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.surface, gap: 6, marginBottom: 8,
+    flex: 1, padding: spacing.md, borderRadius: 18,
+    borderWidth: 1, gap: 6, marginBottom: 8,
   },
-  timelineCardUnlocked: { borderColor: colors.primary, backgroundColor: '#163229' },
-  timelineCardLocked: { opacity: 0.5 },
   timelineTop: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   timelineIcon: { fontSize: 22, width: 30 },
   timelineCopy: { flex: 1 },
-  timelineTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  timelinePhase: { color: colors.textDim, fontSize: 10, marginTop: 2, textTransform: 'capitalize' },
-  tag: { color: colors.primary, fontWeight: '600' },
-  timelineDesc: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
-  dimText: { color: colors.textDim },
-  note: { color: colors.textDim, fontSize: 11, textAlign: 'center', marginTop: spacing.md, lineHeight: 16 },
-  empty: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.background, padding: spacing.lg, gap: 12,
-  },
+  timelineTitle: { fontSize: 15, fontWeight: '700' },
+  timelinePhase: { fontSize: 10, marginTop: 2, textTransform: 'capitalize' },
+  timelineDesc: { fontSize: 12, lineHeight: 17 },
+  note: { fontSize: 11, textAlign: 'center', marginTop: spacing.md, lineHeight: 16 },
+  empty: { flex: 1 },
+  emptyCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: spacing.lg },
   emptyIcon: { fontSize: 56 },
-  emptyText: { color: colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 22 },
+  emptyText: { fontSize: 16, textAlign: 'center', lineHeight: 22 },
 });

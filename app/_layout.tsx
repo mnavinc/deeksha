@@ -25,6 +25,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="store/index" options={{ headerShown: false }} />
+        <Stack.Screen name="donations/index" options={{ headerShown: false }} />
         <Stack.Screen name="expenses/add" options={{ title: 'Add Expense' }} />
       </Stack>
     </>

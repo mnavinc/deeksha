@@ -1,63 +1,176 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '@/components/Button';
-import { APP_DISCLAIMER } from '@/engines/contentEngine';
-import { colors, spacing } from '@/theme/colors';
+import { useAppStore } from '@/store/useAppStore';
+import { useThemeColors, spacing } from '@/theme/colors';
+import { getClayStyle, getClayButtonStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
+import { AuthModal } from '@/components/AuthModal';
 
 export default function WelcomeScreen() {
   const { t } = useI18n();
+  const colors = useThemeColors();
+  const theme = useAppStore((s) => s.theme);
+  const activeTheme = theme === 'system' ? 'dark' : theme;
+  const { height } = useWindowDimensions();
+
+  const [authVisible, setAuthVisible] = useState(false);
 
   const features = [
-    ['📿', t('feat1Title'), t('feat1Desc')],
-    ['🎮', t('feat2Title'), t('feat2Desc')],
-    ['👥', t('feat3Title'), t('feat3Desc')],
-    ['💰', t('feat4Title'), t('feat4Desc')],
-    ['🗺️', t('feat5Title'), t('feat5Desc')],
+    {
+      title: t('feat1Title'),
+      desc: t('feat1Desc'),
+      icon: '📿',
+    },
+    {
+      title: t('feat2Title'),
+      desc: t('feat2Desc'),
+      icon: '🏆',
+    },
+    {
+      title: t('feat3Title'),
+      desc: t('feat3Desc'),
+      icon: '👥',
+    },
   ];
 
+  const handleAuthSuccess = () => {
+    setAuthVisible(false);
+    router.replace('/onboarding/profile');
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.emoji}>🛕</Text>
-      <Text style={styles.saranam}>Swamiye Saranam Ayyappa</Text>
-      <Text style={styles.title}>{t('welcomeTitle')}</Text>
-      <Text style={styles.body}>{t('welcomeBody')}</Text>
-      <View style={styles.features}>
-        {features.map(([icon, title, desc]) => (
-          <View key={title as string} style={styles.feature}>
-            <Text style={styles.featureIcon}>{icon}</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{title}</Text>
-              <Text style={styles.featureDesc}>{desc}</Text>
+    <View style={[styles.container, { height, backgroundColor: colors.background }]}>
+      {/* Top Branding Section */}
+      <View style={styles.topSection}>
+        <View style={[styles.logoCard, getClayStyle(activeTheme, 'high', colors.surface)]}>
+          <Text style={styles.logoSymbol}>🛕</Text>
+        </View>
+        <Text style={[styles.saranamText, { color: colors.primary }]}>{t('saranam')}</Text>
+        <Text style={[styles.welcomeTitle, { color: colors.text }]}>{t('welcomeTitle')}</Text>
+        <Text style={[styles.welcomeBody, { color: colors.textMuted }]}>{t('welcomeBody')}</Text>
+      </View>
+
+      {/* Feature Highlights Grid */}
+      <View style={styles.featuresGrid}>
+        {features.map((item, idx) => (
+          <View
+            key={idx}
+            style={[
+              styles.featCard,
+              getClayStyle(activeTheme, 'low', colors.surface),
+              { borderColor: colors.border },
+            ]}
+          >
+            <Text style={styles.featIcon}>{item.icon}</Text>
+            <View style={styles.featCopy}>
+              <Text style={[styles.featTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.featDesc, { color: colors.textMuted }]}>{item.desc}</Text>
             </View>
           </View>
         ))}
       </View>
-      <Text style={styles.disclaimer}>{APP_DISCLAIMER}</Text>
-      <Button title={t('beginJourney')} onPress={() => router.push('/onboarding/profile')} />
-    </ScrollView>
+
+      {/* Bottom Pinned Call-to-Action */}
+      <View style={styles.bottomSection}>
+        <TouchableOpacity
+          style={[styles.primaryBtn, getClayButtonStyle(activeTheme, 'primary')]}
+          onPress={() => setAuthVisible(true)}
+        >
+          <Text style={styles.btnText}>{t('beginJourney')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Auth Modal Overlay */}
+      <AuthModal
+        visible={authVisible}
+        onClose={() => setAuthVisible(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, paddingTop: 60, paddingBottom: 40 },
-  emoji: { fontSize: 64, textAlign: 'center', marginBottom: spacing.md },
-  saranam: { color: colors.primary, textAlign: 'center', fontSize: 14, fontWeight: '500' },
-  title: { color: colors.text, fontSize: 28, fontWeight: '800', textAlign: 'center', marginTop: spacing.sm },
-  body: { color: colors.textMuted, fontSize: 15, lineHeight: 22, textAlign: 'center', marginVertical: spacing.lg },
-  features: { gap: spacing.md, marginBottom: spacing.lg },
-  feature: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
+  container: {
+    flex: 1,
+    justify: 'space-between',
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
-  featureIcon: { fontSize: 28 },
-  featureText: { flex: 1 },
-  featureTitle: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  featureDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2, lineHeight: 17 },
-  disclaimer: { color: colors.textDim, fontSize: 11, lineHeight: 16, marginBottom: spacing.lg },
+  topSection: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  logoCard: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  logoSymbol: {
+    fontSize: 40,
+  },
+  saranamText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  welcomeBody: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+    maxWidth: 340,
+  },
+  featuresGrid: {
+    gap: spacing.sm,
+    marginVertical: spacing.sm,
+  },
+  featCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: 18,
+  },
+  featIcon: {
+    fontSize: 24,
+  },
+  featCopy: {
+    flex: 1,
+  },
+  featTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  featDesc: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  bottomSection: {
+    width: '100%',
+  },
+  primaryBtn: {
+    width: '100%',
+  },
+  btnText: {
+    color: '#0D1117',
+    fontSize: 16,
+    fontWeight: '800',
+  },
 });
