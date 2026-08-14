@@ -83,6 +83,8 @@ interface AppState {
   setGroupMemberRole: (groupId: string, userId: string, role: GroupMember['role']) => void;
   addGroupMessage: (groupId: string, text: string) => void;
   nominateGroupGuru: (groupId: string, name: string) => void;
+  lastDailyCheckinDate: string | null;
+  checkAllTasks: () => boolean;
   getTodayLog: () => DailyLog;
   refreshGamification: () => void;
 }
@@ -106,10 +108,35 @@ export const useAppStore = create<AppState>()(
       personalBudget: 8000,
       theme: 'system',
       notificationsEnabled: true,
+      lastDailyCheckinDate: null,
 
       setTheme: (theme) => set({ theme }),
       toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
-      signOut: () => set({ profile: null, enrollment: null }),
+      signOut: () => set({ profile: null, enrollment: null, totalPoints: 0, unlockedAchievements: [], savedTempleIds: [], groups: [], expenses: [], settlements: [], lastDailyCheckinDate: null }),
+
+      checkAllTasks: () => {
+        const { enrollment, lastDailyCheckinDate } = get();
+        if (!enrollment) return false;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        if (lastDailyCheckinDate === todayStr) return false; // already checked in today
+        const log = get().getTodayLog();
+        // Mark all checkpoints as done
+        const allDone: Record<string, boolean> = {};
+        for (const key of Object.keys(log.checkpoints)) allDone[key] = true;
+        // Also mark saranam as complete (18)
+        const updated = {
+          ...log,
+          checkpoints: { ...log.checkpoints, ...allDone, morning_prayer: true, saranam: true, vegetarian: true, evening_prayer: true, walking: true },
+          saranamCount: Math.max(log.saranamCount, 18),
+        };
+        const logs = enrollment.dailyLogs.filter((l) => l.date !== log.date);
+        set({
+          enrollment: { ...enrollment, dailyLogs: [...logs, updated] },
+          lastDailyCheckinDate: todayStr,
+        });
+        get().refreshGamification();
+        return true;
+      },
 
       setProfile: (profile) => set({ profile }),
       setLanguage: (language) => {

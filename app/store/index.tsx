@@ -169,6 +169,15 @@ export default function StoreScreen() {
           </Text>
         </View>
 
+        {/* Upcoming Feature Disclaimer */}
+        <View style={[styles.disclaimerBox, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '30' }]}>
+          <Text style={[styles.disclaimerText, { color: colors.textMuted }]}>
+            {language === 'te'
+              ? 'ℹ️ గమనిక: పూజా స్టోర్ రాబోయే సదుపాయం (Upcoming Feature). ఉత్పత్తుల వీక్షణ మరియు కొనుగోలు లింకులు భక్తుల సౌకర్యం కొరకు అమజాన్, ఇన్స్టామార్ట్ మరియు బ్లింకిట్ మార్కెట్‌ప్లేస్‌లకు అనుసంధానించబడ్డాయి.'
+              : 'ℹ️ Disclaimer: Pooja Store is an upcoming feature shown for representation purpose. Links direct to verified products on Amazon, Swiggy Instamart and Blinkit.'}
+          </Text>
+        </View>
+
         {/* Points Banner */}
         <View style={[styles.pointsBanner, getClayStyle(activeTheme, 'low', colors.surface)]}>
           <Text style={styles.pointsIcon}>⭐</Text>
@@ -269,6 +278,17 @@ const styles = StyleSheet.create({
   headerText: { gap: 2 },
   heading: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 12, lineHeight: 17 },
+  disclaimerBox: {
+    padding: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
   pointsBanner: {
     flexDirection: 'row',
     alignItems: 'center',

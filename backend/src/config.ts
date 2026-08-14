@@ -12,5 +12,13 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   CORS_ORIGIN: z.string().url(),
+
+  // SMTP Email Settings (Gmail or any custom SMTP server)
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('DeekshaOrg <noreply@deeksha.app>'),
 });
+
 export const env = envSchema.parse(process.env);

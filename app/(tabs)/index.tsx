@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { getDeekshaType } from '@/data/deekshaTypes';
@@ -23,9 +24,30 @@ export default function HomeScreen() {
   const totalPoints = useAppStore((s) => s.totalPoints);
   const toggleCheckpoint = useAppStore((s) => s.toggleCheckpoint);
   const incrementSaranam = useAppStore((s) => s.incrementSaranam);
+  const checkAllTasks = useAppStore((s) => s.checkAllTasks);
+  const lastDailyCheckinDate = useAppStore((s) => s.lastDailyCheckinDate);
   const getTodayLog = useAppStore((s) => s.getTodayLog);
   const expenses = useAppStore((s) => s.expenses);
   const groups = useAppStore((s) => s.groups);
+
+  const [tasksExpanded, setTasksExpanded] = useState(false);
+  const [checkinDone, setCheckinDone] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const alreadyCheckedIn = lastDailyCheckinDate === todayStr;
+
+  const handleCheckin = useCallback(() => {
+    const success = checkAllTasks();
+    if (success) {
+      setCheckinDone(true);
+      // Pulse animation to celebrate
+      Animated.sequence([
+        Animated.spring(pulseAnim, { toValue: 1.08, useNativeDriver: true }),
+        Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [checkAllTasks, pulseAnim]);
 
   if (!enrollment || !profile) {
     return (
@@ -51,15 +73,54 @@ export default function HomeScreen() {
   const groupExpenses = expenses.filter((e) => e.groupId);
   const groupTotal = groupExpenses.reduce((s, e) => s + e.amount, 0);
 
+  const isCheckedIn = alreadyCheckedIn || checkinDone;
+
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
       <HeaderNav />
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Saranam Banner */}
         <Text style={[styles.saranam, { color: colors.primary }]}>
           {deeksha.rules.commonSaranam ?? 'Swamiye Saranam Ayyappa'}
         </Text>
 
+        {/* ✅ Daily Check-in Card */}
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <TouchableOpacity
+            style={[
+              styles.checkinCard,
+              getClayStyle(activeTheme, 'medium'),
+              isCheckedIn
+                ? { backgroundColor: '#1a4a2e', borderColor: '#34d399' }
+                : { backgroundColor: colors.primary + '18', borderColor: colors.primary },
+            ]}
+            onPress={isCheckedIn ? undefined : handleCheckin}
+            activeOpacity={isCheckedIn ? 1 : 0.85}
+            accessibilityLabel="Daily check-in"
+          >
+            <View style={styles.checkinRow}>
+              <Text style={styles.checkinIcon}>{isCheckedIn ? '✅' : '☀️'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.checkinTitle, { color: isCheckedIn ? '#34d399' : colors.primary }]}>
+                  {isCheckedIn ? 'నేటి దీక్ష సంపన్నం! • Today Complete!' : "నేటి దీక్ష చేయి • Today's Check-in"}
+                </Text>
+                <Text style={[styles.checkinSub, { color: colors.textMuted }]}>
+                  {isCheckedIn
+                    ? `+${todayPoints} పాయింట్లు జమ అయ్యాయి • points earned`
+                    : 'అన్ని నిత్య నియమాలు ఒకే క్లిక్‌తో • All tasks in one tap'}
+                </Text>
+              </View>
+              {!isCheckedIn && (
+                <View style={[styles.checkinBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.checkinBadgeText}>+{todayPoints}pts</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Avatar + Progress */}
         <AvatarDisplay
           points={totalPoints}
           pilgrimageCount={enrollment.pilgrimageCount}
@@ -86,12 +147,30 @@ export default function HomeScreen() {
           <Text style={[styles.pointsTotal, { color: colors.primary }]}>{totalPoints} {t('points')}</Text>
         </View>
 
-        <DailyChecklist
-          checkpoints={todayLog.checkpoints}
-          onToggle={toggleCheckpoint}
-          saranamCount={todayLog.saranamCount}
-          onSaranamPress={() => incrementSaranam(18)}
-        />
+        {/* Tasks collapsible section */}
+        <View style={[styles.tasksSection, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.tasksHeader}
+            onPress={() => setTasksExpanded(!tasksExpanded)}
+            accessibilityLabel="Toggle daily tasks"
+          >
+            <Text style={[styles.tasksSectionTitle, { color: colors.text }]}>
+              📋 నిత్య నియమాలు • Daily Niyamas
+            </Text>
+            <Text style={[styles.tasksChevron, { color: colors.textMuted }]}>
+              {tasksExpanded ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
+
+          {tasksExpanded && (
+            <DailyChecklist
+              checkpoints={todayLog.checkpoints}
+              onToggle={toggleCheckpoint}
+              saranamCount={todayLog.saranamCount}
+              onSaranamPress={() => incrementSaranam(18)}
+            />
+          )}
+        </View>
 
         {groups.length > 0 && (
           <View
@@ -157,26 +236,46 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   content: { padding: spacing.md, paddingBottom: 60, gap: spacing.md },
   saranam: { textAlign: 'center', fontSize: 13, fontWeight: '700' },
-  dayCard: {
-    padding: spacing.lg,
+
+  // --- Check-in card ---
+  checkinCard: {
+    padding: spacing.md,
     borderRadius: 20,
-    borderWidth: 1,
-    gap: spacing.sm,
+    borderWidth: 2,
   },
+  checkinRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkinIcon: { fontSize: 32 },
+  checkinTitle: { fontSize: 15, fontWeight: '800', marginBottom: 2 },
+  checkinSub: { fontSize: 12 },
+  checkinBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  checkinBadgeText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+
+  // --- Day card ---
+  dayCard: { padding: spacing.lg, borderRadius: 20, borderWidth: 1, gap: spacing.sm },
   deekshaName: { fontSize: 11, letterSpacing: 1.5, fontWeight: '700' },
   dayText: { fontSize: 28, fontWeight: '800' },
   remaining: { fontSize: 12 },
+
   pointsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   pointsToday: { fontWeight: '700' },
   pointsTotal: { fontWeight: '700' },
-  section: {
+
+  // --- Tasks collapsible ---
+  tasksSection: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  tasksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: spacing.md,
-    borderRadius: 16,
-    borderWidth: 1,
   },
+  tasksSectionTitle: { fontWeight: '700', fontSize: 14 },
+  tasksChevron: { fontSize: 12 },
+
+  section: { padding: spacing.md, borderRadius: 16, borderWidth: 1 },
   sectionTitle: { fontWeight: '700', marginBottom: 4 },
   sectionText: { fontSize: 13 },
   sectionMeta: { fontSize: 13, marginTop: 4, fontWeight: '600' },
+
   quickActions: { flexDirection: 'row', gap: spacing.sm },
   action: {
     flex: 1,
@@ -187,6 +286,7 @@ const styles = StyleSheet.create({
   },
   actionIcon: { fontSize: 24, marginBottom: 4 },
   actionLabel: { fontSize: 11, fontWeight: '600' },
+
   empty: { flex: 1 },
   emptyCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyIcon: { fontSize: 56 },
