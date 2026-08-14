@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -51,19 +52,32 @@ export function HeaderNav() {
     { label: t('privacyPolicy'), route: '/privacy' as any, icon: 'shield-checkmark-outline' },
   ];
 
-  const handleSignOut = () => {
+  const performSignOut = () => {
     setDrawerOpen(false);
-    Alert.alert(t('signOut'), t('signOutConfirm'), [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: t('signOut'),
-        style: 'destructive',
-        onPress: () => {
-          signOut();
-          router.replace('/onboarding/welcome');
+    signOut();
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.clear();
+      } catch {}
+    }
+    router.replace('/onboarding/welcome');
+  };
+
+  const handleSignOut = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(t('signOutConfirm') || 'Are you sure you want to sign out?')) {
+        performSignOut();
+      }
+    } else {
+      Alert.alert(t('signOut'), t('signOutConfirm'), [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: t('signOut'),
+          style: 'destructive',
+          onPress: performSignOut,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   return (

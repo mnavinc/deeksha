@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -26,22 +26,27 @@ export default function ProfileScreen() {
   const colors = useThemeColors();
   const activeTheme = theme === 'system' ? 'dark' : theme;
 
+  const performSignOut = () => {
+    signOut();
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.clear();
+      } catch {}
+    }
+    router.replace('/onboarding/welcome');
+  };
+
   const handleSignOut = () => {
-    Alert.alert(
-      t('signOut'),
-      t('signOutConfirm'),
-      [
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(t('signOutConfirm') || 'Are you sure you want to sign out?')) {
+        performSignOut();
+      }
+    } else {
+      Alert.alert(t('signOut'), t('signOutConfirm'), [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: t('signOut'),
-          style: 'destructive',
-          onPress: () => {
-            signOut();
-            router.replace('/onboarding/welcome');
-          },
-        },
-      ]
-    );
+        { text: t('signOut'), style: 'destructive', onPress: performSignOut },
+      ]);
+    }
   };
 
   if (!p || !e) {

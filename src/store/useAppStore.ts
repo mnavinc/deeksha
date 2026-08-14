@@ -112,7 +112,23 @@ export const useAppStore = create<AppState>()(
 
       setTheme: (theme) => set({ theme }),
       toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
-      signOut: () => set({ profile: null, enrollment: null, totalPoints: 0, unlockedAchievements: [], savedTempleIds: [], groups: [], expenses: [], settlements: [], lastDailyCheckinDate: null }),
+      signOut: () => {
+        set({
+          profile: null,
+          enrollment: null,
+          journeyHistory: [],
+          totalPoints: 0,
+          unlockedAchievements: [],
+          savedTempleIds: [],
+          groups: [],
+          expenses: [],
+          settlements: [],
+          lastDailyCheckinDate: null,
+        });
+        try {
+          useAppStore.persist.clearStorage();
+        } catch {}
+      },
 
       checkAllTasks: () => {
         const { enrollment, lastDailyCheckinDate } = get();

@@ -210,7 +210,7 @@ export default function HomeScreen() {
               getClayStyle(activeTheme, 'low'),
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
-            onPress={() => router.push('/store')}
+            onPress={() => router.push('/store' as any)}
           >
             <Text style={styles.actionIcon}>🛍️</Text>
             <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('poojaStore')}</Text>
@@ -221,7 +221,7 @@ export default function HomeScreen() {
               getClayStyle(activeTheme, 'low'),
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
-            onPress={() => router.push('/donations')}
+            onPress={() => router.push('/donations' as any)}
           >
             <Text style={styles.actionIcon}>🤲</Text>
             <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('donations')}</Text>
