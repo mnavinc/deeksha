@@ -74,17 +74,19 @@ export default function MapScreen() {
       </View>
 
       {/* Filters */}
-      <ScrollView horizontal contentContainerStyle={styles.filters} showsHorizontalScrollIndicator={false}>
-        {filters.map((f) => (
-          <TouchableOpacity
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.filter, filter === f && styles.active]}
-          >
-            <Text style={[styles.filterText, filter === f && styles.activeText]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.filtersWrapper}>
+        <ScrollView horizontal contentContainerStyle={styles.filters} showsHorizontalScrollIndicator={false}>
+          {filters.map((f) => (
+            <TouchableOpacity
+              key={f}
+              onPress={() => setFilter(f)}
+              style={[styles.filter, filter === f && styles.active]}
+            >
+              <Text style={[styles.filterText, filter === f && styles.activeText]}>{f}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {viewMode === 'map' ? (
         /* ── MAP VIEW ── */
@@ -177,7 +179,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
   },
   locateText: { color: colors.background, fontWeight: '700', fontSize: 12 },
-  filters: { gap: 8, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  filtersWrapper: { height: 52, minHeight: 52, flexShrink: 0, zIndex: 10, marginVertical: 4 },
+  filters: { gap: 8, paddingHorizontal: spacing.md, alignItems: 'center' },
   filter: {
     paddingHorizontal: 12, paddingVertical: 7,
     borderWidth: 1, borderColor: colors.border, borderRadius: 20,

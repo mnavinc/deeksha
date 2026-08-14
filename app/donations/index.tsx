@@ -115,6 +115,16 @@ export default function DonationsScreen() {
         <View style={styles.header}>
           <Text style={[styles.heading, { color: colors.text }]}>{t('donations')}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('donationsSubtitle')}</Text>
+
+          {/* Community-driven disclaimer note */}
+          <View style={[styles.communityNoticeBox, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}40` }]}>
+            <Text style={[styles.communityNoticeTitle, { color: colors.primary }]}>
+              🤝 Community-Driven App • Help Us Serve Mankind
+            </Text>
+            <Text style={[styles.communityNoticeText, { color: colors.textMuted }]}>
+              Deeksha Journey is a community-driven initiative dedicated to spiritual discipline and pilgrim service. Help us maintain this platform free for every Swami! Temple donations go directly to verified Annadhanam trusts & pilgrim medical camps.
+            </Text>
+          </View>
         </View>
 
         {/* Cause Cards */}
@@ -189,9 +199,18 @@ export default function DonationsScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: 60 },
-  header: { gap: 4 },
+  header: { gap: 6 },
   heading: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 13, lineHeight: 18 },
+  communityNoticeBox: {
+    padding: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+    marginTop: 6,
+  },
+  communityNoticeTitle: { fontSize: 13, fontWeight: '800' },
+  communityNoticeText: { fontSize: 12, lineHeight: 17 },
   causesList: { gap: spacing.md },
   causeCard: {
     padding: spacing.md,

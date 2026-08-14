@@ -285,17 +285,24 @@ const styles = StyleSheet.create({
   },
   drawerOverlay: {
     flex: 1,
-    backgroundColor: '#00000080',
+    backgroundColor: '#000000A0',
     flexDirection: 'row',
+    zIndex: 9999,
   },
   overlayDismiss: {
     flex: 1,
   },
   drawerContent: {
-    width: 300,
+    width: 310,
+    maxWidth: '85%',
     height: '100%',
     padding: spacing.md,
     gap: spacing.md,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    shadowOffset: { width: -4, height: 0 },
   },
   drawerHeader: {
     flexDirection: 'row',

@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#F0B42930',
     alignItems: 'center',
-    justify: 'center',
+    justifyContent: 'center',
   },
   avatarText: { color: '#F0B429', fontSize: 18, fontWeight: '800' },
   card: {

@@ -106,26 +106,28 @@ export default function VidhanamScreen() {
         </View>
 
         {/* Category Filters */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {CATEGORY_FILTERS.map((cat) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                onPress={() => setSelectedCategory(cat.id)}
-                style={[
-                  styles.filterChip,
-                  { borderColor: colors.border },
-                  isSelected && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
-                ]}
-              >
-                <Text style={[styles.filterChipText, { color: colors.textMuted }, isSelected && { color: colors.primary, fontWeight: '700' }]}>
-                  {language === 'te' ? cat.labelTe : cat.labelEn}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.filtersWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+            {CATEGORY_FILTERS.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  onPress={() => setSelectedCategory(cat.id)}
+                  style={[
+                    styles.filterChip,
+                    { borderColor: colors.border },
+                    isSelected && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
+                  ]}
+                >
+                  <Text style={[styles.filterChipText, { color: colors.textMuted }, isSelected && { color: colors.primary, fontWeight: '700' }]}>
+                    {language === 'te' ? cat.labelTe : cat.labelEn}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
         {/* 🎧 Devotional Song Playlists (YouTube Links) */}
         {showPlaylists && (!searchQuery.trim() || 'bhajan song youtube playlist yesudas spb veeramani'.includes(searchQuery.toLowerCase())) && (
@@ -241,7 +243,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 14 },
-  filterRow: { gap: 8, paddingVertical: 4 },
+  filtersWrapper: { height: 52, minHeight: 52, flexShrink: 0, zIndex: 10, marginVertical: 4 },
+  filterRow: { gap: 8, alignItems: 'center' },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,

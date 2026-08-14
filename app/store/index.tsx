@@ -189,32 +189,34 @@ export default function StoreScreen() {
       </View>
 
       {/* Quick Vendor Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        {[
-          { id: 'all', label: language === 'te' ? 'అన్నీ' : 'All Products' },
-          { id: 'amazon', label: 'Amazon India' },
-          { id: 'instamart', label: 'Swiggy Instamart' },
-          { id: 'blinkit', label: 'Blinkit' },
-          { id: 'points', label: language === 'te' ? 'పాయింట్లు' : 'Points Redeem' },
-        ].map((v) => {
-          const isSelected = selectedVendor === v.id;
-          return (
-            <TouchableOpacity
-              key={v.id}
-              onPress={() => setSelectedVendor(v.id as StoreVendor)}
-              style={[
-                styles.filterChip,
-                { borderColor: colors.border },
-                isSelected && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
-              ]}
-            >
-              <Text style={[styles.filterChipText, { color: colors.textMuted }, isSelected && { color: colors.primary, fontWeight: '700' }]}>
-                {v.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filtersWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          {[
+            { id: 'all', label: language === 'te' ? 'అన్నీ' : 'All Products' },
+            { id: 'amazon', label: 'Amazon India' },
+            { id: 'instamart', label: 'Swiggy Instamart' },
+            { id: 'blinkit', label: 'Blinkit' },
+            { id: 'points', label: language === 'te' ? 'పాయింట్లు' : 'Points Redeem' },
+          ].map((v) => {
+            const isSelected = selectedVendor === v.id;
+            return (
+              <TouchableOpacity
+                key={v.id}
+                onPress={() => setSelectedVendor(v.id as StoreVendor)}
+                style={[
+                  styles.filterChip,
+                  { borderColor: colors.border },
+                  isSelected && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
+                ]}
+              >
+                <Text style={[styles.filterChipText, { color: colors.textMuted }, isSelected && { color: colors.primary, fontWeight: '700' }]}>
+                  {v.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Items List */}
       <ScrollView contentContainerStyle={styles.content}>
@@ -299,10 +301,11 @@ const styles = StyleSheet.create({
   pointsIcon: { fontSize: 28 },
   pointsLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   pointsValue: { fontSize: 18, fontWeight: '800' },
+  filtersWrapper: { height: 52, minHeight: 52, flexShrink: 0, zIndex: 10, marginVertical: 4 },
   filterRow: {
     gap: 8,
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    alignItems: 'center',
   },
   filterChip: {
     paddingHorizontal: 14,

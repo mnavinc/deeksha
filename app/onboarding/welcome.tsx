@@ -101,7 +101,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justify: 'space-between',
+    justifyContent: 'space-between',
     padding: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,

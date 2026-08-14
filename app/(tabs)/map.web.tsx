@@ -49,23 +49,25 @@ export default function MapScreen() {
       </View>
 
       {/* Deity Filters */}
-      <ScrollView horizontal contentContainerStyle={styles.filters} showsHorizontalScrollIndicator={false}>
-        {filters.map((f) => (
-          <TouchableOpacity
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[
-              styles.filter,
-              { borderColor: colors.border },
-              filter === f && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
-            ]}
-          >
-            <Text style={[styles.filterText, { color: colors.textMuted }, filter === f && { color: colors.primary, fontWeight: '700' }]}>
-              {f}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.filtersWrapper}>
+        <ScrollView horizontal contentContainerStyle={styles.filters} showsHorizontalScrollIndicator={false}>
+          {filters.map((f) => (
+            <TouchableOpacity
+              key={f}
+              onPress={() => setFilter(f)}
+              style={[
+                styles.filter,
+                { borderColor: colors.border },
+                filter === f && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
+              ]}
+            >
+              <Text style={[styles.filterText, { color: colors.textMuted }, filter === f && { color: colors.primary, fontWeight: '700' }]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Web Interactive Map — OpenStreetMap Embed */}
       <View
@@ -150,7 +152,8 @@ const styles = StyleSheet.create({
   },
   heading: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 12 },
-  filters: { gap: 8, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  filtersWrapper: { height: 52, minHeight: 52, flexShrink: 0, zIndex: 10, marginVertical: 4 },
+  filters: { gap: 8, paddingHorizontal: spacing.md, alignItems: 'center' },
   filter: { paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderRadius: 20 },
   filterText: { fontSize: 12 },
   mapContainer: {
