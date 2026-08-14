@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useState, useRef, useCallback } from 'react';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
@@ -43,8 +43,8 @@ export default function HomeScreen() {
       setCheckinDone(true);
       // Pulse animation to celebrate
       Animated.sequence([
-        Animated.spring(pulseAnim, { toValue: 1.08, useNativeDriver: true }),
-        Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: true }),
+        Animated.spring(pulseAnim, { toValue: 1.08, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
       ]).start();
     }
   }, [checkAllTasks, pulseAnim]);

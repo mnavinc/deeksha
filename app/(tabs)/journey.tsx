@@ -82,6 +82,7 @@ export default function JourneyScreen() {
               checkpoints={items}
               currentDay={day}
               unlockedIds={enrollment.unlockedJourneyIds}
+              onUnlockMilestone={unlock}
             />
             <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
           </>
