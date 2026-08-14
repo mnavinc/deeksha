@@ -15,6 +15,13 @@ const translations = {
     bhajans: 'Ayyappa Songs & Bhajans',
     harivarasanam: 'Harivarasanam',
     searchMantras: 'Search mantras, stotras & bhajans...',
+    // Legal & Info Pages
+    faqs: 'Frequently Asked Questions (FAQs)',
+    aboutUs: 'About DeekshaOrg',
+    contactUs: 'Contact Us',
+    privacyPolicy: 'Privacy Policy',
+    termsOfUse: 'Terms & Conditions',
+    grievanceOfficer: 'Grievance Officer (DPDP Act 2023)',
     // Store & Donations & Drawer Navigation
     poojaStore: 'Pooja Store',
     poojaStoreSubtitle: 'Redeem devotional items with points or donate items for pilgrims.',
@@ -219,6 +226,13 @@ const translations = {
     eveningPrayer: 'Evening Prayer',
   },
   te: {
+    // Legal & Info Pages
+    faqs: 'తరచుగా అడిగే ప్రశ్నలు (FAQs)',
+    aboutUs: 'మా గురించి (About DeekshaOrg)',
+    contactUs: 'మమ్మల్ని సంప్రదించండి',
+    privacyPolicy: 'గోప్యతా విధానం (Privacy Policy)',
+    termsOfUse: 'నిబంధనలు & షరతులు',
+    grievanceOfficer: 'ఫర్యాదుల అధికారి (Grievance Officer)',
     // Pooja Vidhanam & eBook
     poojaVidhanamTitle: 'శ్రీ అయ్యప్ప స్వామి పూజ విధానం',
     poojaVidhanamSubtitle: 'మంత్రాలు, స్తోత్రాలు, 108 శరణు ఘోష, భజన పాటలు మరియు హరివరాసనం సంపూర్ణ పుస్తకం.',

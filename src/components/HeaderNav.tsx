@@ -37,14 +37,18 @@ export function HeaderNav() {
   const tier = getSwamiTier(enrollment?.pilgrimageCount ?? 1);
 
   const navItems = [
-    { label: t('home'), route: '/(tabs)' as const, icon: 'home-outline' },
-    { label: t('journey'), route: '/(tabs)/journey' as const, icon: 'trail-sign-outline' },
-    { label: t('poojaVidhanamTitle'), route: '/(tabs)/vidhanam' as const, icon: 'book-outline' },
-    { label: t('groups'), route: '/(tabs)/groups' as const, icon: 'people-outline' },
-    { label: t('poojaStore'), route: '/store' as const, icon: 'bag-handle-outline' },
-    { label: t('donations'), route: '/donations' as const, icon: 'heart-outline' },
-    { label: t('community'), route: '/(tabs)/community' as const, icon: 'people-circle-outline' },
-    { label: t('temples'), route: '/(tabs)/map' as const, icon: 'map-outline' },
+    { label: t('home'), route: '/(tabs)' as any, icon: 'home-outline' },
+    { label: t('journey'), route: '/(tabs)/journey' as any, icon: 'trail-sign-outline' },
+    { label: t('poojaVidhanamTitle'), route: '/(tabs)/vidhanam' as any, icon: 'book-outline' },
+    { label: t('groups'), route: '/(tabs)/groups' as any, icon: 'people-outline' },
+    { label: t('poojaStore'), route: '/store' as any, icon: 'bag-handle-outline' },
+    { label: t('donations'), route: '/donations' as any, icon: 'heart-outline' },
+    { label: t('community'), route: '/(tabs)/community' as any, icon: 'people-circle-outline' },
+    { label: t('temples'), route: '/(tabs)/map' as any, icon: 'map-outline' },
+    { label: t('faqs'), route: '/faqs' as any, icon: 'help-circle-outline' },
+    { label: t('aboutUs'), route: '/about' as any, icon: 'information-circle-outline' },
+    { label: t('contactUs'), route: '/contact' as any, icon: 'mail-outline' },
+    { label: t('privacyPolicy'), route: '/privacy' as any, icon: 'shield-checkmark-outline' },
   ];
 
   const handleSignOut = () => {

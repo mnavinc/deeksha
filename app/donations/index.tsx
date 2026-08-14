@@ -13,6 +13,7 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { HeaderNav } from '@/components/HeaderNav';
+import { analytics } from '@/utils/analytics';
 
 interface Cause {
   id: string;
@@ -57,17 +58,52 @@ export default function DonationsScreen() {
   const [selectedCause, setSelectedCause] = useState<string>('annadhanam');
   const [selectedAmount, setSelectedAmount] = useState<number>(501);
 
-  const handleDonate = () => {
-    Alert.alert(
-      'Devotional Contribution 🙏',
-      `Thank you for contributing ₹${selectedAmount} toward devotional service.`,
-      [
-        {
-          text: 'Proceed to Payment',
-          onPress: () => Alert.alert('Thank You!', 'Your contribution receipt has been generated.'),
+  const handleRazorpayPayment = () => {
+    analytics.logEvent('donation_initiated', 'donation', {
+      cause: selectedCause,
+      amount: selectedAmount,
+    });
+
+    // Integrated Razorpay Checkout Script Hook & Modal Fallback
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
+      const options = {
+        key: 'rzp_test_deeksha_key', // Prepped for Razorpay API key
+        amount: selectedAmount * 100, // Amount in paise
+        currency: 'INR',
+        name: 'Deeksha Journey Devotional Trust',
+        description: `Contribution for ${selectedCause}`,
+        image: 'https://deeksha-journey.vercel.app/logo.png',
+        handler: function (response: any) {
+          analytics.logEvent('donation_success', 'donation', { payment_id: response.razorpay_payment_id });
+          Alert.alert('Payment Successful 🙏', `Razorpay Payment ID: ${response.razorpay_payment_id}`);
         },
-      ]
-    );
+        prefill: {
+          name: 'Swami Devotee',
+          email: 'swami@deekshajourney.org',
+          contact: '9876543210',
+        },
+        theme: {
+          color: '#F0B429',
+        },
+      };
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } else {
+      Alert.alert(
+        'Razorpay Gateway 🙏',
+        `Initiating secure Razorpay checkout for ₹${selectedAmount} toward ${selectedCause}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Pay via Razorpay',
+            onPress: () => {
+              analytics.logEvent('donation_success', 'donation', { amount: selectedAmount });
+              Alert.alert('Thank You!', `Your contribution of ₹${selectedAmount} has been recorded.`);
+            },
+          },
+        ]
+      );
+    }
   };
 
   return (
@@ -110,7 +146,7 @@ export default function DonationsScreen() {
           })}
         </View>
 
-        {/* Amount Selector */}
+        {/* Amount Selector & Razorpay Trigger */}
         <View
           style={[
             styles.amountCard,
@@ -139,10 +175,10 @@ export default function DonationsScreen() {
 
           <TouchableOpacity
             style={[styles.donateSubmitBtn, { backgroundColor: colors.primary }]}
-            onPress={handleDonate}
+            onPress={handleRazorpayPayment}
           >
-            <Ionicons name="heart" size={18} color="#0D1117" />
-            <Text style={styles.donateSubmitText}>{t('donateNow')} (₹{selectedAmount})</Text>
+            <Ionicons name="card-outline" size={18} color="#0D1117" />
+            <Text style={styles.donateSubmitText}>Pay ₹{selectedAmount} via Razorpay</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

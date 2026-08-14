@@ -1,0 +1,23 @@
+# DeekshaOrg — Deeksha Journey & Ayyappa Swamy Spiritual Platform
+
+> Deeksha Journey is a digital spiritual companion, health discipline engine, and Ayyappa Swamy Pooja Vidhanam portal built for devotees across India.
+
+## Application Identity & Purpose
+- Name: DeekshaOrg (Deeksha Journey)
+- Purpose: Guiding devotees through Mandala Vrutham, Sattvic health discipline, daily checklists, Ayyappa Swamy Pooja Vidhanam (Telugu eBook PDF), 108 Sharanu Gosha, Harivarasanam, temple discovery, and devotional donations.
+- Key URL: https://deeksha-sigma.vercel.app/
+
+## Primary Indexable Resources
+- / (Home): Daily discipline checklist, Swami tier progression, points tracker.
+- /vidhanam (Pooja Vidhanam): Complete Ayyappa Swamy Nitya Pooja Vidhanam with mantras, 108 Sharanu Gosha, Bhajans, and Harivarasanam in Telugu & English.
+- /store (Pooja Store): Devotional items redeemable with discipline points or purchasable on Amazon, Swiggy Instamart, and Blinkit.
+- /donations (Devotional Donations): Support Sabarimala Annadhanam Trust, temple maintenance, and pilgrim mountain medical aid via Razorpay.
+- /faqs (FAQs): Comprehensive questions and answers regarding Ayyappa Deeksha rules, food guidelines, walking exercise, and puja rituals.
+- /about (About Us): Organization background, mission, and devotional technology vision.
+- /contact (Contact Us): Support email, office details, and grievance officer contact.
+- /privacy (Privacy Policy): Compliance with the Information Technology Act, 2000 and Digital Personal Data Protection Act, 2023 (DPDP Act, India).
+
+## Legal & Operating Entity
+- Operating Name: DeekshaOrg
+- Jurisdiction: Republic of India
+- Contact Email: support@deekshaorg.in
