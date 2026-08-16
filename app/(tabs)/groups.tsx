@@ -203,7 +203,7 @@ export default function GroupsScreen() {
           ))}
 
           {/* Add member (raw name or registered profile) */}
-          <View style={styles.addRow}>
+          <View style={[styles.addRow, { borderColor: colors.border }]}>
             <TextInput
               value={memberInput}
               onChangeText={setMemberInput}
@@ -231,13 +231,13 @@ export default function GroupsScreen() {
             </Text>
           ) : (
             messages.slice(-4).map((x) => (
-              <View key={x.id} style={styles.message}>
+              <View key={x.id} style={[styles.message, { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderWidth: 1 }]}>
                 <Text style={styles.messageAuthor}>{x.author}</Text>
-                <Text style={styles.messageText}>{x.text}</Text>
+                <Text style={[styles.messageText, { color: colors.text }]}>{x.text}</Text>
               </View>
             ))
           )}
-          <View style={styles.addRow}>
+          <View style={[styles.addRow, { borderColor: colors.border }]}>
             <TextInput
               value={noteInput}
               onChangeText={setNoteInput}

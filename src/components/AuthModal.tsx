@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Keyboard,
+  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -28,7 +29,8 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
   const { t } = useI18n();
   const colors = useThemeColors();
   const theme = useAppStore((s) => s.theme);
-  const activeTheme = theme === 'system' ? 'dark' : theme;
+  const systemScheme = useColorScheme();
+  const activeTheme: 'light' | 'dark' = theme === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : theme;
   const setProfile = useAppStore((s) => s.setProfile);
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');

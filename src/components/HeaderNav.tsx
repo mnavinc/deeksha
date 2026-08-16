@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useColorScheme,
   useWindowDimensions,
 } from 'react-native';
 import { router, usePathname } from 'expo-router';
@@ -31,7 +32,8 @@ export function HeaderNav() {
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
   const signOut = useAppStore((s) => s.signOut);
-  const activeTheme = theme === 'system' ? 'dark' : theme;
+  const systemScheme = useColorScheme();
+  const activeTheme: 'light' | 'dark' = theme === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : theme;
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -128,10 +130,10 @@ export function HeaderNav() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onPress={() => setTheme(activeTheme === 'dark' ? 'light' : 'dark')}
                 style={[styles.chipBtn, { borderColor: colors.border }]}
               >
-                <Ionicons name={theme === 'dark' ? 'sunny' : 'moon'} size={16} color={colors.primary} />
+                <Ionicons name={activeTheme === 'dark' ? 'sunny' : 'moon'} size={16} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>

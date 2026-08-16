@@ -38,14 +38,14 @@ export const lightColors = {
 };
 
 
-export const colors = darkColors;
+export const colors = lightColors;
 
 export function useThemeColors() {
   const theme = useAppStore((s) => s.theme);
   const systemScheme = useColorScheme();
 
-  const activeTheme = theme === 'system' ? systemScheme ?? 'dark' : theme;
-  return activeTheme === 'light' ? lightColors : darkColors;
+  const activeTheme = theme === 'system' ? (systemScheme ?? 'light') : theme;
+  return activeTheme === 'dark' ? darkColors : lightColors;
 }
 
 export const spacing = {
