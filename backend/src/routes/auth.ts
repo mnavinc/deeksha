@@ -45,7 +45,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // Lookup user name if exists (for personalised email)
     const userResult = await pool.query(
-      `SELECT name FROM users WHERE email = $1 LIMIT 1`,
+      `SELECT display_name AS name FROM users WHERE email = $1 LIMIT 1`,
       [identifier]
     );
     const name = userResult.rows[0]?.name;
@@ -108,12 +108,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // Upsert user
     const displayName = name?.trim() || identifier.split('@')[0];
+    const externalAuthId = `email:${identifier}`;
     const userResult = await pool.query(
-      `INSERT INTO users (email, name)
-       VALUES ($1, $2)
-       ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)
-       RETURNING id, email, name, created_at`,
-      [identifier, displayName]
+      `INSERT INTO users (external_auth_id, email, display_name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO UPDATE SET display_name = COALESCE(EXCLUDED.display_name, users.display_name)
+       RETURNING id, email, display_name AS name, created_at`,
+      [externalAuthId, identifier, displayName]
     );
     const user = userResult.rows[0];
 
