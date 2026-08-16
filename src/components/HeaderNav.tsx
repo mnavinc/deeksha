@@ -42,6 +42,7 @@ export function HeaderNav() {
     { label: t('journey'), route: '/(tabs)/journey' as any, icon: 'trail-sign-outline' },
     { label: t('poojaVidhanamTitle'), route: '/(tabs)/vidhanam' as any, icon: 'book-outline' },
     { label: t('groups'), route: '/(tabs)/groups' as any, icon: 'people-outline' },
+    { label: t('guide'), route: '/guide' as any, icon: 'book-open-outline' },
     { label: t('poojaStore'), route: '/store' as any, icon: 'bag-handle-outline' },
     { label: t('donations'), route: '/donations' as any, icon: 'heart-outline' },
     { label: t('community'), route: '/(tabs)/community' as any, icon: 'people-circle-outline' },
@@ -60,7 +61,7 @@ export function HeaderNav() {
         window.localStorage.clear();
       } catch {}
     }
-    router.replace('/onboarding/welcome');
+    router.replace('/onboarding/welcome?action=signin');
   };
 
   const handleSignOut = () => {

@@ -30,6 +30,8 @@ export default function HomeScreen() {
   const expenses = useAppStore((s) => s.expenses);
   const groups = useAppStore((s) => s.groups);
 
+  const pendingPoints = useAppStore((s) => s.pendingPoints);
+
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [checkinDone, setCheckinDone] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -38,15 +40,12 @@ export default function HomeScreen() {
   const alreadyCheckedIn = lastDailyCheckinDate === todayStr;
 
   const handleCheckin = useCallback(() => {
-    const success = checkAllTasks();
-    if (success) {
-      setCheckinDone(true);
-      // Pulse animation to celebrate
-      Animated.sequence([
-        Animated.spring(pulseAnim, { toValue: 1.08, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
-      ]).start();
-    }
+    checkAllTasks();
+    setCheckinDone(true);
+    Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1.08, duration: 150, useNativeDriver: true }),
+      Animated.spring(pulseAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
   }, [checkAllTasks, pulseAnim]);
 
   if (!enrollment || !profile) {
@@ -122,7 +121,7 @@ export default function HomeScreen() {
 
         {/* Avatar + Progress */}
         <AvatarDisplay
-          points={totalPoints}
+          points={totalPoints + pendingPoints}
           pilgrimageCount={enrollment.pilgrimageCount}
           name={profile.name}
         />
@@ -144,7 +143,9 @@ export default function HomeScreen() {
 
         <View style={styles.pointsRow}>
           <Text style={[styles.pointsToday, { color: colors.success }]}>+{todayPoints} {t('today')}</Text>
-          <Text style={[styles.pointsTotal, { color: colors.primary }]}>{totalPoints} {t('points')}</Text>
+          <Text style={[styles.pointsTotal, { color: colors.primary }]}>
+            {totalPoints} pts {pendingPoints > 0 ? `(+${pendingPoints} active)` : ''}
+          </Text>
         </View>
 
         {/* Tasks collapsible section */}

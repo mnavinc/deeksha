@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AYYAPPA_JOURNEY } from '@/data/journeyCheckpoints';
+import { getJourneyForDeeksha } from '@/data/journeyCheckpoints';
 import { useAppStore } from '@/store/useAppStore';
 import { getCurrentDay } from '@/engines/deekshaEngine';
 import { useThemeColors, spacing } from '@/theme/colors';
@@ -35,7 +35,7 @@ export default function JourneyScreen() {
   }
 
   const day = getCurrentDay(enrollment);
-  const items = enrollment.deekshaId === 'ayyappa' ? AYYAPPA_JOURNEY : AYYAPPA_JOURNEY.slice(0, 6);
+  const items = getJourneyForDeeksha(enrollment.deekshaId);
 
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
@@ -82,6 +82,7 @@ export default function JourneyScreen() {
               checkpoints={items}
               currentDay={day}
               unlockedIds={enrollment.unlockedJourneyIds}
+              deekshaId={enrollment.deekshaId}
               onUnlockMilestone={unlock}
             />
             <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>

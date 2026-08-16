@@ -7,15 +7,25 @@
     "scheme": "deekshajourney",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "primaryColor": "#D4A017",
+    "splash": {
+      "backgroundColor": "#1B4332",
+      "resizeMode": "contain"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.deekshajourney.app",
+      "userInterfaceStyle": "automatic",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Find nearby temples and pilgrimage checkpoints during your Yatra."
       }
     },
     "android": {
       "package": "com.deekshajourney.app",
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "backgroundColor": "#1B4332"
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"

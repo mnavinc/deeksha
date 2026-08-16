@@ -21,6 +21,8 @@ export default function ProfileScreen() {
   const setTheme = useAppStore((s) => s.setTheme);
   const notificationsEnabled = useAppStore((s) => s.notificationsEnabled);
   const toggleNotifications = useAppStore((s) => s.toggleNotifications);
+  const totalPoints = useAppStore((s) => s.totalPoints);
+  const pendingPoints = useAppStore((s) => s.pendingPoints);
   const signOut = useAppStore((s) => s.signOut);
   const { t, language } = useI18n();
   const colors = useThemeColors();
@@ -33,7 +35,7 @@ export default function ProfileScreen() {
         window.localStorage.clear();
       } catch {}
     }
-    router.replace('/onboarding/welcome');
+    router.replace('/onboarding/welcome?action=signin');
   };
 
   const handleSignOut = () => {
@@ -154,6 +156,22 @@ export default function ProfileScreen() {
           <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'left' }]}>
             {e.pilgrimageCenter} · {format(getVruthamEndDate(e), 'dd MMM yyyy')}
           </Text>
+        </View>
+
+        {/* Discipline Points Card */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.textDim }]}>{t('pointsBalance').toUpperCase()}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+            <Text style={[styles.value, { fontSize: 24, color: colors.primary, fontWeight: '800' }]}>{totalPoints}</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('totalPointsLabel')}</Text>
+          </View>
+          {pendingPoints > 0 && (
+            <View style={{ marginTop: 6, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8, backgroundColor: 'rgba(212, 160, 23, 0.12)', alignSelf: 'flex-start' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>
+                +{pendingPoints} {t('pendingPointsLabel')} (Credited on Completion 🙏)
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Journey History */}

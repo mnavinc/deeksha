@@ -129,50 +129,6 @@ export default function VidhanamScreen() {
           </ScrollView>
         </View>
 
-        {/* 🎧 Devotional Song Playlists (YouTube Links) */}
-        {showPlaylists && (!searchQuery.trim() || 'bhajan song youtube playlist yesudas spb veeramani'.includes(searchQuery.toLowerCase())) && (
-          <View
-            style={[
-              styles.playlistCard,
-              getClayStyle(activeTheme, 'medium'),
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <TouchableOpacity style={styles.secHeader} onPress={() => toggleSection('playlists')}>
-              <Text style={[styles.secTitle, { color: colors.primary, flex: 1 }]}>
-                🎧 {language === 'te' ? 'భక్తి పాటలు & భజన ప్లేలిస్టులు (YouTube)' : 'Devotional Songs & Playlists (YouTube)'}
-              </Text>
-              <Text style={[styles.secChevron, { color: colors.textMuted }]}>
-                {expandedSections.has('playlists') ? '▲' : '▼'}
-              </Text>
-            </TouchableOpacity>
-
-            {expandedSections.has('playlists') && (
-              <View style={styles.playlistList}>
-                {DEVOTIONAL_PLAYLISTS.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.playlistItem, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => handleOpenPlaylist(item.youtubeUrl)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.playlistEmoji}>{item.iconEmoji}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.playlistTitle, { color: colors.text }]}>
-                        {language === 'te' ? item.titleTe : item.titleEn}
-                      </Text>
-                      <Text style={[styles.playlistArtist, { color: colors.textMuted }]}>
-                        🎙️ {item.artist}
-                      </Text>
-                    </View>
-                    <Ionicons name="open-outline" size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
         {/* Pooja Content Sections */}
         <View style={styles.sectionsList}>
           {filteredSections.map((sec) => {
@@ -221,6 +177,50 @@ export default function VidhanamScreen() {
             );
           })}
         </View>
+
+        {/* 🎧 Devotional Song Playlists — shown at bottom */}
+        {showPlaylists && (!searchQuery.trim() || 'bhajan song youtube playlist yesudas spb veeramani'.includes(searchQuery.toLowerCase())) && (
+          <View
+            style={[
+              styles.playlistCard,
+              getClayStyle(activeTheme, 'medium'),
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <TouchableOpacity style={styles.secHeader} onPress={() => toggleSection('playlists')}>
+              <Text style={[styles.secTitle, { color: colors.primary, flex: 1 }]}>
+                🎧 {language === 'te' ? 'భక్తి పాటలు & భజన ప్లేలిస్టులు (YouTube)' : 'Devotional Songs & Playlists (YouTube)'}
+              </Text>
+              <Text style={[styles.secChevron, { color: colors.textMuted }]}>
+                {expandedSections.has('playlists') ? '▲' : '▼'}
+              </Text>
+            </TouchableOpacity>
+
+            {expandedSections.has('playlists') && (
+              <View style={styles.playlistList}>
+                {DEVOTIONAL_PLAYLISTS.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.playlistItem, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => handleOpenPlaylist(item.youtubeUrl)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.playlistEmoji}>{item.iconEmoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.playlistTitle, { color: colors.text }]}>
+                        {language === 'te' ? item.titleTe : item.titleEn}
+                      </Text>
+                      <Text style={[styles.playlistArtist, { color: colors.textMuted }]}>
+                        🎙️ {item.artist}
+                      </Text>
+                    </View>
+                    <Ionicons name="open-outline" size={18} color={colors.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </View>
   );

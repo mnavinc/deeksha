@@ -45,6 +45,7 @@ interface AppState {
   enrollment: DeekshaEnrollment | null;
   journeyHistory: DeekshaEnrollment[];
   totalPoints: number;
+  pendingPoints: number;
   unlockedAchievements: string[];
   savedTempleIds: string[];
   groups: PilgrimageGroup[];
@@ -100,6 +101,7 @@ export const useAppStore = create<AppState>()(
       enrollment: null,
       journeyHistory: [],
       totalPoints: 0,
+      pendingPoints: 0,
       unlockedAchievements: [],
       savedTempleIds: [],
       groups: [],
@@ -118,6 +120,7 @@ export const useAppStore = create<AppState>()(
           enrollment: null,
           journeyHistory: [],
           totalPoints: 0,
+          pendingPoints: 0,
           unlockedAchievements: [],
           savedTempleIds: [],
           groups: [],
@@ -249,11 +252,15 @@ export const useAppStore = create<AppState>()(
       },
 
       completeDeeksha: () => {
-        const { enrollment, profile } = get();
+        const { enrollment, profile, pendingPoints, totalPoints } = get();
         if (!enrollment) return;
         const completedEnrollment = { ...enrollment, status: 'completed' as const };
+        const earnedPoints = calculateTotalPoints(enrollment.dailyLogs);
+        const newTotalPoints = totalPoints + (pendingPoints > 0 ? pendingPoints : earnedPoints);
         set({
           enrollment: completedEnrollment,
+          totalPoints: newTotalPoints,
+          pendingPoints: 0,
           journeyHistory: [...get().journeyHistory.filter((item) => item.id !== enrollment.id), completedEnrollment],
           profile: profile
             ? { ...profile, pilgrimageCount: profile.pilgrimageCount + 1, onboardingComplete: true }
@@ -318,13 +325,17 @@ export const useAppStore = create<AppState>()(
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, guruName: name, guruApprovalCount: Math.max(0, g.members.length - 1), announcements: [...(g.announcements ?? []), { id: generateId(), text: `Guru approval requested for ${name}`, createdAt: new Date().toISOString() }] } : g) }),
 
       refreshGamification: () => {
-        const { enrollment, expenses, profile } = get();
+        const { enrollment, expenses, profile, totalPoints } = get();
         if (!enrollment) return;
-        const totalPoints = calculateTotalPoints(enrollment.dailyLogs);
+        const activePoints = calculateTotalPoints(enrollment.dailyLogs);
+        const isCompleted = enrollment.status === 'completed';
+        const pendingPoints = isCompleted ? 0 : activePoints;
+        const combinedPoints = totalPoints + (isCompleted ? 0 : activePoints);
+
         const stats = buildAchievementStats(
           enrollment.dailyLogs,
-          totalPoints,
-          enrollment.status === 'completed',
+          combinedPoints,
+          isCompleted,
           expenses.filter((e) => e.groupId).length
         );
         const unlocked = getUnlockedAchievements(stats);
@@ -337,12 +348,12 @@ export const useAppStore = create<AppState>()(
         const newUnlocked = [...new Set([...enrollment.unlockedJourneyIds, ...autoUnlock])];
 
         if (profile) {
-          const tier = getSwamiTier(profile.pilgrimageCount + (enrollment.status === 'completed' ? 1 : 0));
+          const tier = getSwamiTier(profile.pilgrimageCount + (isCompleted ? 1 : 0));
           void tier;
         }
 
         set({
-          totalPoints,
+          pendingPoints,
           unlockedAchievements: unlocked,
           enrollment: { ...enrollment, unlockedJourneyIds: newUnlocked },
         });

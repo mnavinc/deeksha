@@ -36,18 +36,18 @@ export default function GroupsScreen() {
     setErrorMsg('');
 
     if (trimmed.length < 3) {
-      setErrorMsg(language === 'te' ? 'సమూహం పేరు కనీసం 3 అక్షరాలు ఉండాలి.' : 'Group name must be at least 3 characters.');
+      setErrorMsg(language === 'te' ? 'సన్నిధానం పేరు కనీసం 3 అక్షరాలు ఉండాలి.' : 'Sannidhanam name must be at least 3 characters.');
       return;
     }
     if (trimmed.length > 50) {
-      setErrorMsg(language === 'te' ? 'సమూహం పేరు 50 అక్షరాల కంటే తక్కువ ఉండాలి.' : 'Group name must be less than 50 characters.');
+      setErrorMsg(language === 'te' ? 'సన్నిధానం పేరు 50 అక్షరాల కంటే తక్కువ ఉండాలి.' : 'Sannidhanam name must be less than 50 characters.');
       return;
     }
 
     // Name duplication check
     const duplicate = groups.some((g) => g.name.toLowerCase() === trimmed.toLowerCase());
     if (duplicate) {
-      setErrorMsg(language === 'te' ? 'ఈ పేరుతో సమూహం ఇప్పటికే ఉంది. దయచేసి వేరే పేరును ఉపయోగించండి.' : 'A group with this name already exists. Please choose a different name.');
+      setErrorMsg(language === 'te' ? 'ఈ పేరుతో సన్నిధానం ఇప్పటికే ఉంది. దయచేసి వేరే పేరును ఉపయోగించండి.' : 'A Sannidhanam with this name already exists. Please choose a different name.');
       return;
     }
 
@@ -66,17 +66,17 @@ export default function GroupsScreen() {
       <View style={[styles.page, { backgroundColor: colors.background }]}>
         <HeaderNav />
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={[styles.heading, { color: colors.text }]}>{t('groups')}</Text>
+          <Text style={[styles.heading, { color: colors.text }]}>{t('sannidhanam')}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {t('communitySubtitle')}
+            {language === 'te' ? 'మీ గురు స్వామి సన్నిధానం గ్రూపును సృష్టించండి లేదా చేరండి.' : 'Create or manage your pilgrim Sannidhanam group.'}
           </Text>
 
           <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.section, { color: colors.text }]}>{t('createCircle')}</Text>
+            <Text style={[styles.section, { color: colors.text }]}>{t('createSannidhanam')}</Text>
             <TextInput
               value={groupNameInput}
               onChangeText={(txt) => { setGroupNameInput(txt); setErrorMsg(''); }}
-              placeholder={t('circleName')}
+              placeholder={language === 'te' ? 'ఉదా. శ్రీ అయ్యప్ప సన్నిధానం' : 'e.g. Sri Manikanta Sannidhanam'}
               placeholderTextColor={colors.textDim}
               style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
             />
@@ -85,7 +85,7 @@ export default function GroupsScreen() {
               style={[styles.primary, { backgroundColor: colors.primary }]}
               onPress={handleCreateGroup}
             >
-              <Text style={styles.primaryText}>{t('createCircle')}</Text>
+              <Text style={styles.primaryText}>{t('createSannidhanam')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -114,10 +114,10 @@ export default function GroupsScreen() {
         <View style={styles.hero}>
           <View style={{ flex: 1 }}>
             <View style={styles.heroHeaderRow}>
-              <Text style={styles.eyebrow}>COMMUNITY CIRCLE</Text>
+              <Text style={styles.eyebrow}>{language === 'te' ? 'పవిత్ర సన్నిధానం' : 'SACRED SANNIDHANAM'}</Text>
               {isVerifiedGroup && (
                 <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}> Verified Group ✅</Text>
+                  <Text style={styles.verifiedText}>{language === 'te' ? ' గురు స్వామి ఆమోదం ✅' : ' Verified Sannidhanam ✅'}</Text>
                 </View>
               )}
             </View>

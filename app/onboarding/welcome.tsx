@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,7 +7,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle, getClayButtonStyle } from '@/theme/claymorphism';
@@ -15,13 +15,20 @@ import { useI18n } from '@/i18n';
 import { AuthModal } from '@/components/AuthModal';
 
 export default function WelcomeScreen() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const colors = useThemeColors();
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
   const { height } = useWindowDimensions();
+  const { action } = useLocalSearchParams<{ action?: string }>();
 
   const [authVisible, setAuthVisible] = useState(false);
+
+  useEffect(() => {
+    if (action === 'signin') {
+      setAuthVisible(true);
+    }
+  }, [action]);
 
   const features = [
     {
@@ -47,7 +54,7 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { height, backgroundColor: colors.background }]}>
+    <ScrollView contentContainerStyle={[styles.container, { minHeight: height, backgroundColor: colors.background }]}>
       {/* Top Branding Section */}
       <View style={styles.topSection}>
         <View style={[styles.logoCard, getClayStyle(activeTheme, 'high', colors.surface)]}>
@@ -78,13 +85,26 @@ export default function WelcomeScreen() {
         ))}
       </View>
 
-      {/* Bottom Pinned Call-to-Action */}
+      {/* Bottom Call-to-Actions */}
       <View style={styles.bottomSection}>
         <TouchableOpacity
           style={[styles.primaryBtn, getClayButtonStyle(activeTheme, 'primary')]}
           onPress={() => setAuthVisible(true)}
         >
           <Text style={styles.btnText}>{t('beginJourney')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.secondaryBtn,
+            getClayStyle(activeTheme, 'low', colors.surface),
+            { borderColor: colors.border, marginTop: spacing.sm },
+          ]}
+          onPress={() => router.push('/guide' as any)}
+        >
+          <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>
+            {language === 'te' ? '📖 దీక్ష విశిష్టత & యాప్ గైడ్ చూడండి' : '📖 Deeksha Benefits & App Tutorial'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -94,7 +114,7 @@ export default function WelcomeScreen() {
         onClose={() => setAuthVisible(false)}
         onSuccess={handleAuthSuccess}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -172,5 +192,18 @@ const styles = StyleSheet.create({
     color: '#0D1117',
     fontSize: 16,
     fontWeight: '800',
+  },
+  secondaryBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

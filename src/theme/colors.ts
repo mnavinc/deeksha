@@ -7,8 +7,8 @@ export const darkColors = {
   surfaceElevated: '#21262D',
   border: '#30363D',
   text: '#F0F6FC',
-  textMuted: '#8B949E',
-  textDim: '#6E7681',
+  textMuted: '#B0BEC5',   // was #8B949E — brighter for readability
+  textDim: '#8B949E',     // was #6E7681 — was barely visible in dark
   primary: '#F0B429',
   primaryDark: '#D4A017',
   success: '#3FB950',
@@ -25,8 +25,8 @@ export const lightColors = {
   surfaceElevated: '#EAEEF2',
   border: '#D0D7DE',
   text: '#1F2328',
-  textMuted: '#57606A',
-  textDim: '#6E7781',
+  textMuted: '#424A53',   // was #57606A — darker for better contrast on light bg
+  textDim: '#57606A',     // was #6E7781
   primary: '#D49000',
   primaryDark: '#B37800',
   success: '#1F883D',
@@ -36,6 +36,7 @@ export const lightColors = {
   ayyappaBlack: '#1a1a2e',
   accent: '#0969DA',
 };
+
 
 export const colors = darkColors;
 
