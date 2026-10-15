@@ -1,11 +1,18 @@
 -- Migration 005: Store Inventory, Orders, Devotional Donations & Indian Legal Compliance Audit Logs
 -- DeekshaOrg Production Schema
 
-CREATE TYPE store_vendor_type AS ENUM ('AMAZON', 'INSTAMART', 'BLINKIT', 'DEEKSHA_POINTS');
-CREATE TYPE order_status AS ENUM ('PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'FAILED');
+DO $$ BEGIN
+  CREATE TYPE store_vendor_type AS ENUM ('AMAZON', 'INSTAMART', 'BLINKIT', 'DEEKSHA_POINTS');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE order_status AS ENUM ('PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'FAILED');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- Store Inventory & E-Commerce / Instant Commerce Links
-CREATE TABLE store_products (
+CREATE TABLE IF NOT EXISTS store_products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   category text NOT NULL CHECK (category IN ('buy', 'points', 'donate')),
@@ -22,7 +29,7 @@ CREATE TABLE store_products (
 );
 
 -- Devotional Orders & Points Redemptions
-CREATE TABLE store_orders (
+CREATE TABLE IF NOT EXISTS store_orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   product_id uuid REFERENCES store_products(id) ON DELETE SET NULL,
@@ -35,7 +42,7 @@ CREATE TABLE store_orders (
 );
 
 -- Devotional Donations Log (Sabarimala Annadhanam, Water, Medical)
-CREATE TABLE devotional_donations (
+CREATE TABLE IF NOT EXISTS devotional_donations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   cause_id text NOT NULL,
@@ -46,7 +53,7 @@ CREATE TABLE devotional_donations (
 );
 
 -- IT Act 2000 & Digital Personal Data Protection Act 2023 (DPDP) Audit Logs
-CREATE TABLE compliance_audit_logs (
+CREATE TABLE IF NOT EXISTS compliance_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   action_type text NOT NULL,
@@ -56,6 +63,6 @@ CREATE TABLE compliance_audit_logs (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX store_products_vendor_idx ON store_products(vendor);
-CREATE INDEX store_orders_user_idx ON store_orders(user_id, created_at DESC);
-CREATE INDEX devotional_donations_user_idx ON devotional_donations(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS store_products_vendor_idx ON store_products(vendor);
+CREATE INDEX IF NOT EXISTS store_orders_user_idx ON store_orders(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS devotional_donations_user_idx ON devotional_donations(user_id, created_at DESC);

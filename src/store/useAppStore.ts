@@ -10,7 +10,7 @@ import {
   getTodayLog,
 } from '@/engines/deekshaEngine';
 import type { DailyCheckpointId } from '@/data/journeyCheckpoints';
-import { calculateDayPoints, calculateTotalPoints, buildAchievementStats, getUnlockedAchievements } from '@/engines/gamificationEngine';
+import { calculateTotalPoints, buildAchievementStats, getUnlockedAchievements } from '@/engines/gamificationEngine';
 import type { Expense, Settlement } from '@/engines/expenseEngine';
 import { getSwamiTier } from '@/data/swamiNames';
 

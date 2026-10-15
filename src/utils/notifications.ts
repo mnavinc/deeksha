@@ -1,7 +1,6 @@
 /**
  * notifications.ts — Web & Mobile Notifications for Daily 7:00 PM Check-in & Group Updates.
  */
-import { Platform } from 'react-native';
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window !== 'undefined' && 'Notification' in window) {

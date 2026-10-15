@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import type { JourneyCheckpoint } from '@/data/journeyCheckpoints';
 import { DEEKSHA_MAP_THEME } from '@/data/journeyCheckpoints';
-import { colors as globalColors, spacing } from '@/theme/colors';
+import { spacing } from '@/theme/colors';
 import { useI18n } from '@/i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -77,7 +77,7 @@ export function JourneyTrailMap({ checkpoints, currentDay, unlockedIds, deekshaI
   const pathD = useMemo(() => buildSvgPath(stops, MAP_W, MAP_H), [stops]);
 
   const unlockedCount = checkpoints.filter(
-    (c, i) => unlockedIds.includes(c.id) || (c.dayUnlock ?? Infinity) <= currentDay
+    (c) => unlockedIds.includes(c.id) || (c.dayUnlock ?? Infinity) <= currentDay
   ).length;
 
   const progressStops = stops.slice(0, Math.max(1, unlockedCount));

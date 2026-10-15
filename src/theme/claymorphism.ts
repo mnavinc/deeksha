@@ -1,5 +1,4 @@
-import { StyleSheet, ViewStyle } from 'react-native';
-import { darkColors, lightColors } from './colors';
+import type { ViewStyle } from 'react-native';
 
 export function getClayStyle(
   theme: 'light' | 'dark',

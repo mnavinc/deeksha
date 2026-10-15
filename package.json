@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"src/tests/**/*.test.ts\""
   },
   "dependencies": {
     "@expo-google-fonts/ramabhadra": "^0.4.1",
@@ -42,6 +44,9 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~19.2.18",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.2"
   },
   "private": true

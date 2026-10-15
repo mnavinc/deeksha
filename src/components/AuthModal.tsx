@@ -74,7 +74,7 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
         setSuccessMsg(data.message ?? `OTP sent to ${identifier}. Check your inbox.`);
         setStep('otp');
       }
-    } catch (err) {
+    } catch {
       setError('Network error — is the backend running? Check your connection.');
     } finally {
       setLoading(false);
@@ -112,7 +112,7 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
         });
         onSuccess();
       }
-    } catch (err) {
+    } catch {
       setError('Network error — is the backend running?');
     } finally {
       setLoading(false);
