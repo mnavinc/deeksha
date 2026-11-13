@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
 import { useState, useCallback } from 'react';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
@@ -11,14 +11,18 @@ import { DailyChecklist } from '@/components/DailyChecklist';
 import { InteractiveJapamala } from '@/components/InteractiveJapamala';
 import { SacredCelebrationBurst } from '@/components/SacredCelebrationBurst';
 import { HeaderNav } from '@/components/HeaderNav';
-import { useThemeColors, spacing } from '@/theme/colors';
+import { useThemeColors, useFontScale, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 
 export default function HomeScreen() {
   const { t } = useI18n();
   const colors = useThemeColors();
+  const fontScale = useFontScale();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
   const theme = useAppStore((s) => s.theme);
+  const reduceMotion = useAppStore((s) => s.reduceMotion);
   const activeTheme = theme === 'system' ? 'dark' : theme;
 
   const profile = useAppStore((s) => s.profile);
@@ -45,12 +49,14 @@ export default function HomeScreen() {
   const handleCheckin = useCallback(() => {
     checkAllTasks();
     setCheckinDone(true);
-    setBurstKey((k) => k + 1);
-    Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.08, duration: 150, useNativeDriver: true }),
-      Animated.spring(pulseAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start();
-  }, [checkAllTasks, pulseAnim]);
+    if (!reduceMotion) {
+      setBurstKey((k) => k + 1);
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.08, duration: 150, useNativeDriver: true }),
+        Animated.spring(pulseAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [checkAllTasks, pulseAnim, reduceMotion]);
 
   if (!enrollment || !profile) {
     return (
@@ -81,209 +87,229 @@ export default function HomeScreen() {
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
       <HeaderNav />
-      <SacredCelebrationBurst triggerKey={burstKey} />
+      {!reduceMotion && <SacredCelebrationBurst triggerKey={burstKey} />}
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
         {/* Saranam Banner */}
-        <Text style={[styles.saranam, { color: colors.primary }]}>
+        <Text style={[styles.saranam, { color: colors.primary, fontSize: Math.round(13 * fontScale) }]}>
           {deeksha.rules.commonSaranam ?? 'Swamiye Saranam Ayyappa'}
         </Text>
 
-        {/* ✅ Daily Check-in Card */}
-        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-          <TouchableOpacity
-            style={[
-              styles.checkinCard,
-              getClayStyle(activeTheme, 'medium'),
-              isCheckedIn
-                ? { backgroundColor: '#1a4a2e', borderColor: '#34d399' }
-                : { backgroundColor: colors.primary + '18', borderColor: colors.primary },
-            ]}
-            onPress={isCheckedIn ? undefined : handleCheckin}
-            activeOpacity={isCheckedIn ? 1 : 0.85}
-            accessibilityLabel="Daily check-in"
-          >
-            <View style={styles.checkinRow}>
-              <Text style={styles.checkinIcon}>{isCheckedIn ? '✅' : '☀️'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.checkinTitle, { color: isCheckedIn ? '#34d399' : colors.primary }]}>
-                  {isCheckedIn ? 'నేటి దీక్ష సంపన్నం! • Today Complete!' : "నేటి దీక్ష చేయి • Today's Check-in"}
-                </Text>
-                <Text style={[styles.checkinSub, { color: colors.textMuted }]}>
-                  {isCheckedIn
-                    ? `+${todayPoints} పాయింట్లు జమ అయ్యాయి • points earned`
-                    : 'అన్ని నిత్య నియమాలు ఒకే క్లిక్‌తో • All tasks in one tap'}
-                </Text>
-              </View>
-              {!isCheckedIn && (
-                <View style={[styles.checkinBadge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.checkinBadgeText}>+{todayPoints}pts</Text>
+        <View style={[styles.widgetGrid, isWide && styles.widgetGridWide]}>
+          {/* Left Column (or Top on Mobile): Check-in, Avatar, Progress, Streak */}
+          <View style={[styles.widgetCol, isWide && styles.widgetColWide]}>
+            {/* ✅ Daily Check-in Card */}
+            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+              <TouchableOpacity
+                style={[
+                  styles.checkinCard,
+                  getClayStyle(activeTheme, 'medium'),
+                  isCheckedIn
+                    ? { backgroundColor: '#1a4a2e', borderColor: '#34d399' }
+                    : { backgroundColor: colors.primary + '18', borderColor: colors.primary },
+                ]}
+                onPress={isCheckedIn ? undefined : handleCheckin}
+                activeOpacity={isCheckedIn ? 1 : 0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Daily check-in"
+                accessibilityState={{ checked: isCheckedIn }}
+              >
+                <View style={styles.checkinRow}>
+                  <Text style={styles.checkinIcon}>{isCheckedIn ? '✅' : '☀️'}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.checkinTitle, { color: isCheckedIn ? '#34d399' : colors.primary, fontSize: Math.round(15 * fontScale) }]}>
+                      {isCheckedIn ? 'నేటి దీక్ష సంపన్నం! • Today Complete!' : "నేటి దీక్ష చేయి • Today's Check-in"}
+                    </Text>
+                    <Text style={[styles.checkinSub, { color: colors.textMuted, fontSize: Math.round(12 * fontScale) }]}>
+                      {isCheckedIn
+                        ? `+${todayPoints} పాయింట్లు జమ అయ్యాయి • points earned`
+                        : 'అన్ని నిత్య నియమాలు ఒకే క్లిక్‌తో • All tasks in one tap'}
+                    </Text>
+                  </View>
+                  {!isCheckedIn && (
+                    <View style={[styles.checkinBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.checkinBadgeText}>+{todayPoints}pts</Text>
+                    </View>
+                  )}
                 </View>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Avatar + Progress */}
+            <AvatarDisplay
+              points={totalPoints + pendingPoints}
+              pilgrimageCount={enrollment.pilgrimageCount}
+              name={profile.name}
+            />
+
+            <View
+              style={[
+                styles.dayCard,
+                getClayStyle(activeTheme, 'medium'),
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.deekshaName, { color: colors.textDim }]}>{deeksha.name.toUpperCase()}</Text>
+              <Text style={[styles.dayText, { color: colors.text, fontSize: Math.round(28 * fontScale) }]}>
+                {t('day')} {day} / {enrollment.durationDays}
+              </Text>
+              <ProgressBar progress={progress} color={colors.primary} />
+              <Text style={[styles.remaining, { color: colors.textMuted, fontSize: Math.round(12 * fontScale) }]}>{remaining} {t('daysUntilReady')}</Text>
+            </View>
+
+            <View style={styles.pointsRow}>
+              <Text style={[styles.pointsToday, { color: colors.success, fontSize: Math.round(14 * fontScale) }]}>+{todayPoints} {t('today')}</Text>
+              <Text style={[styles.pointsTotal, { color: colors.primary, fontSize: Math.round(14 * fontScale) }]}>
+                {totalPoints} pts {pendingPoints > 0 ? `(+${pendingPoints} active)` : ''}
+              </Text>
+            </View>
+
+            {/* 🔥 Gamified Lifestyle Streak & Habit Pillars */}
+            <View
+              style={[
+                styles.section,
+                getClayStyle(activeTheme, 'medium'),
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.tasksHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text, fontSize: Math.round(14 * fontScale) }]}>
+                  🔥 {enrollment.dailyLogs.length} Day Streak · Lifestyle Pillars
+                </Text>
+                <TouchableOpacity onPress={() => router.push('/guide' as any)} accessibilityRole="link">
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+                    Kanni Guide →
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                {[
+                  { label: '🌅 Pooja', done: todayLog.checkpoints.prayer },
+                  { label: `📿 ${todayLog.saranamCount}/108`, done: todayLog.saranamCount >= 18 },
+                  { label: '🍽️ Sattvic', done: todayLog.checkpoints.vegetarian },
+                  { label: '👣 Walk', done: todayLog.checkpoints.walking },
+                  { label: '🕯️ Evening', done: todayLog.checkpoints.eveningPrayer },
+                ].map((pill, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: pill.done ? colors.success : colors.border,
+                      backgroundColor: pill.done ? '#3FB95018' : colors.background,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: pill.done ? colors.success : colors.textMuted }}>
+                      {pill.done ? '✓ ' : ''}{pill.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* Right Column (or Bottom on Mobile): Japamala, Daily Niyamas, Groups, Quick Actions */}
+          <View style={[styles.widgetCol, isWide && styles.widgetColWide]}>
+            {/* Interactive 108-Bead Japamala */}
+            <InteractiveJapamala
+              saranamCount={todayLog.saranamCount}
+              onChant={(amount) => incrementSaranam(amount)}
+              onMilestone={() => {
+                if (!reduceMotion) setBurstKey((k) => k + 1);
+              }}
+            />
+
+            {/* Tasks collapsible section */}
+            <View style={[styles.tasksSection, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.tasksHeader}
+                onPress={() => setTasksExpanded(!tasksExpanded)}
+                accessibilityRole="button"
+                accessibilityLabel="Toggle daily tasks"
+                accessibilityState={{ expanded: tasksExpanded }}
+              >
+                <Text style={[styles.tasksSectionTitle, { color: colors.text, fontSize: Math.round(14 * fontScale) }]}>
+                  📋 నిత్య నియమాలు • Daily Niyamas
+                </Text>
+                <Text style={[styles.tasksChevron, { color: colors.textMuted }]}>
+                  {tasksExpanded ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+
+              {tasksExpanded && (
+                <DailyChecklist
+                  checkpoints={todayLog.checkpoints}
+                  onToggle={toggleCheckpoint}
+                  saranamCount={todayLog.saranamCount}
+                  onSaranamPress={() => incrementSaranam(18)}
+                />
               )}
             </View>
-          </TouchableOpacity>
-        </Animated.View>
 
-        {/* Avatar + Progress */}
-        <AvatarDisplay
-          points={totalPoints + pendingPoints}
-          pilgrimageCount={enrollment.pilgrimageCount}
-          name={profile.name}
-        />
-
-        {/* Interactive 108-Bead Japamala */}
-        <InteractiveJapamala
-          saranamCount={todayLog.saranamCount}
-          onChant={(amount) => incrementSaranam(amount)}
-          onMilestone={() => setBurstKey((k) => k + 1)}
-        />
-
-        <View
-          style={[
-            styles.dayCard,
-            getClayStyle(activeTheme, 'medium'),
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.deekshaName, { color: colors.textDim }]}>{deeksha.name.toUpperCase()}</Text>
-          <Text style={[styles.dayText, { color: colors.text }]}>
-            {t('day')} {day} / {enrollment.durationDays}
-          </Text>
-          <ProgressBar progress={progress} color={colors.primary} />
-          <Text style={[styles.remaining, { color: colors.textMuted }]}>{remaining} {t('daysUntilReady')}</Text>
-        </View>
-
-        <View style={styles.pointsRow}>
-          <Text style={[styles.pointsToday, { color: colors.success }]}>+{todayPoints} {t('today')}</Text>
-          <Text style={[styles.pointsTotal, { color: colors.primary }]}>
-            {totalPoints} pts {pendingPoints > 0 ? `(+${pendingPoints} active)` : ''}
-          </Text>
-        </View>
-
-        {/* 🔥 Gamified Lifestyle Streak & Habit Pillars */}
-        <View
-          style={[
-            styles.section,
-            getClayStyle(activeTheme, 'medium'),
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.tasksHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              🔥 {enrollment.dailyLogs.length} Day Streak · Lifestyle Pillars
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/guide' as any)}>
-              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-                Kanni Guide →
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-            {[
-              { label: '🌅 Pooja', done: todayLog.checkpoints.prayer },
-              { label: `📿 ${todayLog.saranamCount}/108`, done: todayLog.saranamCount >= 18 },
-              { label: '🍽️ Sattvic', done: todayLog.checkpoints.vegetarian },
-              { label: '👣 Walk', done: todayLog.checkpoints.walking },
-              { label: '🕯️ Evening', done: todayLog.checkpoints.eveningPrayer },
-            ].map((pill, i) => (
+            {groups.length > 0 && (
               <View
-                key={i}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: pill.done ? colors.success : colors.border,
-                  backgroundColor: pill.done ? '#3FB95018' : colors.background,
-                }}
+                style={[
+                  styles.section,
+                  getClayStyle(activeTheme, 'low'),
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: pill.done ? colors.success : colors.textMuted }}>
-                  {pill.done ? '✓ ' : ''}{pill.label}
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('groups')}</Text>
+                <Text style={[styles.sectionText, { color: colors.textMuted }]}>
+                  {groups[0].name} · {groups[0].members.length} {t('members')}
                 </Text>
+                {groupTotal > 0 && (
+                  <Text style={[styles.sectionMeta, { color: colors.primary }]}>
+                    {t('groupExpenses')}: ₹{groupTotal.toLocaleString('en-IN')}
+                  </Text>
+                )}
               </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Tasks collapsible section */}
-        <View style={[styles.tasksSection, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={styles.tasksHeader}
-            onPress={() => setTasksExpanded(!tasksExpanded)}
-            accessibilityLabel="Toggle daily tasks"
-          >
-            <Text style={[styles.tasksSectionTitle, { color: colors.text }]}>
-              📋 నిత్య నియమాలు • Daily Niyamas
-            </Text>
-            <Text style={[styles.tasksChevron, { color: colors.textMuted }]}>
-              {tasksExpanded ? '▲' : '▼'}
-            </Text>
-          </TouchableOpacity>
-
-          {tasksExpanded && (
-            <DailyChecklist
-              checkpoints={todayLog.checkpoints}
-              onToggle={toggleCheckpoint}
-              saranamCount={todayLog.saranamCount}
-              onSaranamPress={() => incrementSaranam(18)}
-            />
-          )}
-        </View>
-
-        {groups.length > 0 && (
-          <View
-            style={[
-              styles.section,
-              getClayStyle(activeTheme, 'low'),
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('groups')}</Text>
-            <Text style={[styles.sectionText, { color: colors.textMuted }]}>
-              {groups[0].name} · {groups[0].members.length} {t('members')}
-            </Text>
-            {groupTotal > 0 && (
-              <Text style={[styles.sectionMeta, { color: colors.primary }]}>
-                {t('groupExpenses')}: ₹{groupTotal.toLocaleString('en-IN')}
-              </Text>
             )}
-          </View>
-        )}
 
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[
-              styles.action,
-              getClayStyle(activeTheme, 'low'),
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={() => router.push('/(tabs)/journey')}
-          >
-            <Text style={styles.actionIcon}>🗺️</Text>
-            <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('journey')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.action,
-              getClayStyle(activeTheme, 'low'),
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={() => router.push('/store' as any)}
-          >
-            <Text style={styles.actionIcon}>🛍️</Text>
-            <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('poojaStore')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.action,
-              getClayStyle(activeTheme, 'low'),
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={() => router.push('/donations' as any)}
-          >
-            <Text style={styles.actionIcon}>🤲</Text>
-            <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('donations')}</Text>
-          </TouchableOpacity>
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={[
+                  styles.action,
+                  getClayStyle(activeTheme, 'low'),
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={() => router.push('/(tabs)/journey')}
+                accessibilityRole="button"
+                accessibilityLabel={t('journey')}
+              >
+                <Text style={styles.actionIcon}>🗺️</Text>
+                <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('journey')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.action,
+                  getClayStyle(activeTheme, 'low'),
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={() => router.push('/(tabs)/map')}
+                accessibilityRole="button"
+                accessibilityLabel={t('temples')}
+              >
+                <Text style={styles.actionIcon}>🛕</Text>
+                <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('temples')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.action,
+                  getClayStyle(activeTheme, 'low'),
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={() => router.push('/donations' as any)}
+                accessibilityRole="button"
+                accessibilityLabel={t('donations')}
+              >
+                <Text style={styles.actionIcon}>🤲</Text>
+                <Text style={[styles.actionLabel, { color: colors.textMuted }]}>{t('donations')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -293,6 +319,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   content: { padding: spacing.md, paddingBottom: 60, gap: spacing.md },
+  contentWide: { maxWidth: 1140, width: '100%', alignSelf: 'center', paddingHorizontal: spacing.lg },
+  widgetGrid: { gap: spacing.md },
+  widgetGridWide: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  widgetCol: { gap: spacing.md },
+  widgetColWide: { flex: 1 },
   saranam: { textAlign: 'center', fontSize: 13, fontWeight: '700' },
 
   // --- Check-in card ---

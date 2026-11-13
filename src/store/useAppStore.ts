@@ -57,9 +57,15 @@ interface AppState {
   personalBudget: number;
   theme: 'system' | 'light' | 'dark';
   notificationsEnabled: boolean;
+  fontScale: 'normal' | 'large' | 'xlarge';
+  highContrast: boolean;
+  reduceMotion: boolean;
 
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   toggleNotifications: () => void;
+  setFontScale: (fontScale: 'normal' | 'large' | 'xlarge') => void;
+  toggleHighContrast: () => void;
+  toggleReduceMotion: () => void;
   setAuth: (token: string, profile: UserProfile) => void;
   hydrateFromBackend: () => Promise<boolean>;
   signOut: () => void;
@@ -130,10 +136,16 @@ export const useAppStore = create<AppState>()(
       personalBudget: 8000,
       theme: 'system',
       notificationsEnabled: true,
+      fontScale: 'normal',
+      highContrast: false,
+      reduceMotion: false,
       lastDailyCheckinDate: null,
 
       setTheme: (theme) => set({ theme }),
       toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
+      setFontScale: (fontScale) => set({ fontScale }),
+      toggleHighContrast: () => set((s) => ({ highContrast: !s.highContrast })),
+      toggleReduceMotion: () => set((s) => ({ reduceMotion: !s.reduceMotion })),
       setAuth: (token, profile) => set({ authToken: token, profile }),
       hydrateFromBackend: async () => {
         const { authToken } = get();

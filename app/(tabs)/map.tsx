@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from 'r
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { DeityFilter, SAMPLE_TEMPLES, getNearbyTemples } from '@/data/temples';
+import { DeityFilter, SAMPLE_TEMPLES } from '@/data/temples';
+import { fetchNearbyTemplesOSM, getOpenStreetMapUrl, type OsmTemple } from '@/services/openMapsService';
 import { useAppStore } from '@/store/useAppStore';
 import { colors, spacing } from '@/theme/colors';
 import { useI18n } from '@/i18n';
@@ -15,7 +16,7 @@ type ViewMode = 'list' | 'map';
 export default function MapScreen() {
   const { t } = useI18n();
   const [filter, setFilter] = useState<DeityFilter | 'All'>('All');
-  const [nearby, setNearby] = useState<ReturnType<typeof getNearbyTemples> | null>(null);
+  const [nearby, setNearby] = useState<OsmTemple[] | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const saved = useAppStore((s) => s.savedTempleIds);
@@ -31,7 +32,13 @@ export default function MapScreen() {
     if (result.status !== 'granted') return;
     const p = await Location.getCurrentPositionAsync({});
     setUserLocation({ latitude: p.coords.latitude, longitude: p.coords.longitude });
-    setNearby(getNearbyTemples(p.coords.latitude, p.coords.longitude, 500, filter === 'All' ? undefined : filter));
+    const osmList = await fetchNearbyTemplesOSM(
+      p.coords.latitude,
+      p.coords.longitude,
+      25000,
+      filter === 'All' ? undefined : filter
+    );
+    setNearby(osmList);
   };
 
   // Map region — center on first temple or user location
@@ -134,11 +141,11 @@ export default function MapScreen() {
                 <TouchableOpacity
                   style={styles.dirBtn}
                   onPress={() =>
-                    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${temple.latitude},${temple.longitude}`)
+                    Linking.openURL(getOpenStreetMapUrl(temple.latitude, temple.longitude))
                   }
                 >
                   <Ionicons name="navigate" size={14} color={colors.primary} />
-                  <Text style={styles.dirText}>{t('getDirections')}</Text>
+                  <Text style={styles.dirText}>OpenStreetMap</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.mapBtn}

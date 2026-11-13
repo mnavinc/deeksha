@@ -21,6 +21,12 @@ export default function ProfileScreen() {
   const setTheme = useAppStore((s) => s.setTheme);
   const notificationsEnabled = useAppStore((s) => s.notificationsEnabled);
   const toggleNotifications = useAppStore((s) => s.toggleNotifications);
+  const fontScale = useAppStore((s) => s.fontScale);
+  const setFontScale = useAppStore((s) => s.setFontScale);
+  const highContrast = useAppStore((s) => s.highContrast);
+  const toggleHighContrast = useAppStore((s) => s.toggleHighContrast);
+  const reduceMotion = useAppStore((s) => s.reduceMotion);
+  const toggleReduceMotion = useAppStore((s) => s.toggleReduceMotion);
   const totalPoints = useAppStore((s) => s.totalPoints);
   const pendingPoints = useAppStore((s) => s.pendingPoints);
   const signOut = useAppStore((s) => s.signOut);
@@ -145,6 +151,77 @@ export default function ProfileScreen() {
               onValueChange={toggleNotifications}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={colors.surface}
+              accessibilityLabel={t('enableNotifications')}
+            />
+          </View>
+        </View>
+
+        {/* Accessibility Options */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.textDim }]}>
+            {language === 'te' ? 'సౌలభ్యత సెట్టింగ్‌లు (ACCESSIBILITY)' : 'ACCESSIBILITY'}
+          </Text>
+          <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
+            {language === 'te' ? 'అక్షరాల పరిమాణం • Readable Text Size' : 'Readable Text Size'}
+          </Text>
+          <View style={styles.langRow}>
+            {([
+              { id: 'normal', label: language === 'te' ? 'సాధారణం' : 'Normal' },
+              { id: 'large', label: language === 'te' ? 'పెద్దది' : 'Large' },
+              { id: 'xlarge', label: language === 'te' ? 'అతి పెద్దది' : 'Extra Large' },
+            ] as const).map((opt) => (
+              <TouchableOpacity
+                key={opt.id}
+                onPress={() => setFontScale(opt.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: fontScale === opt.id }}
+                accessibilityLabel={`Text size ${opt.label}`}
+                style={[
+                  styles.chip,
+                  { borderColor: colors.border, minHeight: 44, justifyContent: 'center' },
+                  fontScale === opt.id && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary },
+                ]}
+              >
+                <Text style={[styles.chipText, { color: colors.textMuted }, fontScale === opt.id && { color: colors.primary, fontWeight: '700' }]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[styles.rowBetween, { marginTop: 8 }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
+                {language === 'te' ? 'అధిక కాంట్రాస్ట్ • High Contrast' : 'High Contrast Mode'}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'left', fontSize: 12 }]}>
+                {language === 'te' ? 'స్పష్టమైన చదువు కోసం అధిక కాంట్రాస్ట్ రంగులు' : 'Stronger text and border contrast for easier reading'}
+              </Text>
+            </View>
+            <Switch
+              value={highContrast}
+              onValueChange={toggleHighContrast}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
+              accessibilityLabel="High contrast mode"
+            />
+          </View>
+
+          <View style={[styles.rowBetween, { marginTop: 8 }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.value, { color: colors.text, fontSize: 14 }]}>
+                {language === 'te' ? 'తక్కువ కదలికలు • Reduce Motion' : 'Reduce Motion'}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'left', fontSize: 12 }]}>
+                {language === 'te' ? 'యానిమేషన్ వేగాన్ని తగ్గించండి' : 'Minimize celebration bursts and motion effects'}
+              </Text>
+            </View>
+            <Switch
+              value={reduceMotion}
+              onValueChange={toggleReduceMotion}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
+              accessibilityLabel="Reduce motion"
             />
           </View>
         </View>

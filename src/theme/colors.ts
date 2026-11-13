@@ -38,14 +38,51 @@ export const lightColors = {
 };
 
 
+export const highContrastDarkColors = {
+  ...darkColors,
+  background: '#000000',
+  surface: '#0B0F14',
+  surfaceElevated: '#161D24',
+  border: '#8B949E',
+  text: '#FFFFFF',
+  textMuted: '#E6EDF3',
+  textDim: '#C9D1D9',
+  primary: '#FFD43B',
+  success: '#4AE168',
+};
+
+export const highContrastLightColors = {
+  ...lightColors,
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceElevated: '#F0F3F6',
+  border: '#1F2328',
+  text: '#000000',
+  textMuted: '#1F2328',
+  textDim: '#24292F',
+  primary: '#9A6700',
+  success: '#116329',
+};
+
 export const colors = lightColors;
 
 export function useThemeColors() {
   const theme = useAppStore((s) => s.theme);
+  const highContrast = useAppStore((s) => s.highContrast);
   const systemScheme = useColorScheme();
 
   const activeTheme = theme === 'system' ? (systemScheme ?? 'light') : theme;
+  if (highContrast) {
+    return activeTheme === 'dark' ? highContrastDarkColors : highContrastLightColors;
+  }
   return activeTheme === 'dark' ? darkColors : lightColors;
+}
+
+export function useFontScale(): number {
+  const fontScale = useAppStore((s) => s.fontScale);
+  if (fontScale === 'xlarge') return 1.28;
+  if (fontScale === 'large') return 1.14;
+  return 1;
 }
 
 export const spacing = {

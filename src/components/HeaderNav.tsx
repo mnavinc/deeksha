@@ -46,7 +46,6 @@ export function HeaderNav() {
     { label: t('poojaVidhanamTitle'), route: '/(tabs)/vidhanam' as any, icon: 'book-outline' },
     { label: t('groups'), route: '/(tabs)/groups' as any, icon: 'people-outline' },
     { label: t('guide'), route: '/guide' as any, icon: 'compass-outline' },
-    { label: t('poojaStore'), route: '/store' as any, icon: 'bag-handle-outline' },
     { label: t('donations'), route: '/donations' as any, icon: 'heart-outline' },
     { label: t('community'), route: '/(tabs)/community' as any, icon: 'people-circle-outline' },
     { label: t('temples'), route: '/(tabs)/map' as any, icon: 'map-outline' },
