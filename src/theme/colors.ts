@@ -2,39 +2,41 @@ import { useColorScheme } from 'react-native';
 import { useAppStore } from '@/store/useAppStore';
 
 export const darkColors = {
-  background: '#071B42',
-  surface: '#0B2D6B',       // Divine Blue
-  surfaceElevated: '#123B85',
-  border: '#1E4B9E',
-  text: '#FFF8E1',          // Sacred Cream
-  textMuted: '#D6E2F5',
-  textDim: '#9CB4DB',
-  primary: '#F7931E',       // Saffron
-  primaryDark: '#D4AF37',   // Golden
+  background: '#0D1117',
+  surface: '#161B22',
+  surfaceElevated: '#21262D',
+  border: '#30363D',
+  text: '#F8FAFC',
+  textMuted: '#B0BEC5',
+  textDim: '#8B949E',
+  primary: '#F7931E',       // Swamiseva Saffron
+  primaryDark: '#D4AF37',   // Swamiseva Golden
+  onPrimary: '#0D1117',
   success: '#3FB950',
   warning: '#F7931E',
   error: '#F85149',
   ayyappaGold: '#D4AF37',
-  ayyappaBlack: '#071B42',
-  accent: '#2E86EB',        // Sky Blue
+  ayyappaBlack: '#0D1117',
+  accent: '#2E86EB',        // Swamiseva Sky Blue
 };
 
 export const lightColors = {
-  background: '#FFF8E1',    // Sacred Cream
+  background: '#F8FAFC',
   surface: '#FFFFFF',
-  surfaceElevated: '#FFF2CC',
-  border: '#E6D6A8',
-  text: '#0B2D6B',          // Divine Blue
-  textMuted: '#2B4A80',
-  textDim: '#4E6B9E',
-  primary: '#F7931E',       // Saffron
-  primaryDark: '#D4AF37',   // Golden
-  success: '#1F883D',
-  warning: '#9A6700',
-  error: '#CF222E',
+  surfaceElevated: '#F1F5F9',
+  border: '#E2E8F0',
+  text: '#0F172A',
+  textMuted: '#475569',
+  textDim: '#64748B',
+  primary: '#E07A00',       // Readable Saffron on light
+  primaryDark: '#B45309',
+  onPrimary: '#FFFFFF',
+  success: '#16A34A',
+  warning: '#D97706',
+  error: '#DC2626',
   ayyappaGold: '#D4AF37',
   ayyappaBlack: '#0B2D6B',
-  accent: '#2E86EB',        // Sky Blue
+  accent: '#0B2D6B',        // Swamiseva Divine Blue accent
 };
 
 

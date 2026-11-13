@@ -27,6 +27,7 @@ const REEL_CATEGORIES: Array<DevotionalReel['category'] | 'All'> = [
 export default function CommunityScreen() {
   const [q, setQ] = useState('');
   const [reelFilter, setReelFilter] = useState<DevotionalReel['category'] | 'All'>('All');
+  const [followedNames, setFollowedNames] = useState<string[]>([]);
   const groups = useAppStore((s) => s.groups);
   const theme = useAppStore((s) => s.theme);
   const logUserAction = useAppStore((s) => s.logUserAction);
@@ -172,24 +173,48 @@ export default function CommunityScreen() {
 
         {/* Recommended */}
         <Text style={[styles.section, { color: colors.text }]}>{t('recommended')}</Text>
-        {people.map((person) => (
-          <View
-            key={person.name}
-            style={[styles.person, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <View style={[styles.avatar, { backgroundColor: colors.surfaceElevated }]}>
-              <Text style={[styles.initial, { color: colors.primary }]}>{person.name[0]}</Text>
+        {people.map((person) => {
+          const isFollowing = followedNames.includes(person.name);
+          return (
+            <View
+              key={person.name}
+              style={[styles.person, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              <View style={[styles.avatar, { backgroundColor: colors.surfaceElevated }]}>
+                <Text style={[styles.initial, { color: colors.primary }]}>{person.name[0]}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.name, { color: colors.text }]}>{person.name}</Text>
+                <Text style={[styles.tier, { color: colors.primary }]}>{person.tier}</Text>
+                <Text style={[styles.reason, { color: colors.textMuted }]}>{person.reason}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() =>
+                  setFollowedNames((prev) =>
+                    prev.includes(person.name) ? prev.filter((n) => n !== person.name) : [...prev, person.name]
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`${isFollowing ? 'Following' : 'Follow'} ${person.name}`}
+                style={[
+                  styles.followBtn,
+                  isFollowing
+                    ? { backgroundColor: 'transparent', borderColor: colors.primary }
+                    : { backgroundColor: colors.primary, borderColor: colors.primary },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.followText,
+                    { color: isFollowing ? colors.primary : '#0D1117' },
+                  ]}
+                >
+                  {isFollowing ? (isTe ? 'అనుసరిస్తున్నారు ✓' : 'Following ✓') : t('follow')}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.name, { color: colors.text }]}>{person.name}</Text>
-              <Text style={[styles.tier, { color: colors.primary }]}>{person.tier}</Text>
-              <Text style={[styles.reason, { color: colors.textMuted }]}>{person.reason}</Text>
-            </View>
-            <TouchableOpacity style={[styles.followBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.followText}>{t('follow')}</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+          );
+        })}
 
         {/* Groups */}
         <Text style={[styles.section, { color: colors.text }]}>{t('groups')}</Text>
@@ -248,14 +273,19 @@ const styles = StyleSheet.create({
   tier: { color: colors.primary, fontSize: 11, marginTop: 2 },
   reason: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
   followBtn: {
-    borderColor: colors.primary, borderWidth: 1,
-    borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  followText: { color: colors.primary, fontSize: 11, fontWeight: '800' },
-  group: { padding: 13, backgroundColor: colors.surface, borderRadius: 14 },
+  followText: { fontSize: 12, fontWeight: '800' },
+  group: { padding: 13, borderRadius: 14, borderWidth: 1 },
   notice: {
     flexDirection: 'row', gap: 11, padding: 14,
-    backgroundColor: '#F0B42912', borderRadius: 14,
+    borderRadius: 14, borderWidth: 1,
   },
   reelHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
   reelBadge: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },

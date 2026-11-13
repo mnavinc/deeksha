@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   brandSaranam: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
   desktopNav: {

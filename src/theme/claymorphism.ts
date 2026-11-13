@@ -8,33 +8,33 @@ export function getClayStyle(
   const isDark = theme === 'dark';
 
   if (isDark) {
-    // Dark Claymorphism
-    const bg = customBg ?? '#12171E';
+    // Minimal Dark Surface
+    const bg = customBg ?? '#161B22';
     return {
       backgroundColor: bg,
-      borderRadius: 20,
+      borderRadius: 18,
       borderWidth: 1,
-      borderColor: '#30363D80',
+      borderColor: '#30363D',
       shadowColor: '#000',
-      shadowOffset: { width: 4, height: 6 },
-      shadowOpacity: 0.6,
-      shadowRadius: elevation === 'high' ? 12 : elevation === 'medium' ? 8 : 4,
-      elevation: elevation === 'high' ? 10 : elevation === 'medium' ? 6 : 3,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.35,
+      shadowRadius: elevation === 'high' ? 10 : elevation === 'medium' ? 6 : 3,
+      elevation: elevation === 'high' ? 8 : elevation === 'medium' ? 4 : 2,
     };
   }
 
-  // Light Claymorphism (Soft inflated 3D feel)
-  const bg = customBg ?? '#EAF0F6';
+  // Minimal Light Surface
+  const bg = customBg ?? '#FFFFFF';
   return {
     backgroundColor: bg,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#FFFFFF',
-    shadowColor: '#B0C0D0',
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: elevation === 'high' ? 14 : elevation === 'medium' ? 8 : 4,
-    elevation: elevation === 'high' ? 8 : elevation === 'medium' ? 5 : 2,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: elevation === 'high' ? 10 : elevation === 'medium' ? 6 : 3,
+    elevation: elevation === 'high' ? 6 : elevation === 'medium' ? 3 : 1,
   };
 }
 
@@ -43,9 +43,9 @@ export function getClayButtonStyle(
   variant: 'primary' | 'secondary' | 'accent' = 'primary'
 ): ViewStyle {
   const isDark = theme === 'dark';
-  const primaryBg = isDark ? '#F0B429' : '#D49000';
-  const secondaryBg = isDark ? '#1C232D' : '#DDE5ED';
-  const accentBg = isDark ? '#E65100' : '#CC4400';
+  const primaryBg = isDark ? '#F7931E' : '#E07A00';
+  const secondaryBg = isDark ? '#21262D' : '#F1F5F9';
+  const accentBg = '#0B2D6B';
 
   const bg = variant === 'primary' ? primaryBg : variant === 'accent' ? accentBg : secondaryBg;
 
