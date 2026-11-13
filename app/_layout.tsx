@@ -1,7 +1,9 @@
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Ramabhadra_400Regular } from '@expo-google-fonts/ramabhadra';
 import { useThemeColors } from '@/theme/colors';
+import { ChatbotWidget } from '@/components/ChatbotWidget';
 
 export default function RootLayout() {
   const colors = useThemeColors();
@@ -12,7 +14,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <StatusBar style={colors.background === '#FFFFFF' ? 'dark' : 'light'} />
       <Stack
         screenOptions={{
@@ -31,8 +33,10 @@ export default function RootLayout() {
         <Stack.Screen name="about" options={{ headerShown: false }} />
         <Stack.Screen name="contact" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />
+        <Stack.Screen name="guide" options={{ headerShown: false }} />
         <Stack.Screen name="expenses/add" options={{ title: 'Add Expense' }} />
       </Stack>
-    </>
+      <ChatbotWidget />
+    </View>
   );
 }

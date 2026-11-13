@@ -109,7 +109,7 @@ function syncLogIfAuthenticated(authToken: string | null, enrollmentId: string |
       saranamCount: log.saranamCount,
       notes: log.notes,
     })
-    .catch(() => {});
+    .catch(() => { });
 }
 
 export const useAppStore = create<AppState>()(
@@ -227,7 +227,7 @@ export const useAppStore = create<AppState>()(
         });
         try {
           useAppStore.persist.clearStorage();
-        } catch {}
+        } catch { }
       },
 
       checkAllTasks: () => {
@@ -289,7 +289,7 @@ export const useAppStore = create<AppState>()(
             .then((remote) => {
               if (remote?.id) set({ backendEnrollmentId: remote.id });
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       },
 
