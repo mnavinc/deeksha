@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "Deeksha Journey",
-    "slug": "deeksha-journey",
+    "name": "Swamiseva",
+    "slug": "swamiseva",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/swamiseva-logo.jpg",
     "scheme": "deekshajourney",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "primaryColor": "#D4A017",
+    "primaryColor": "#F7931E",
     "splash": {
-      "backgroundColor": "#1B4332",
+      "image": "./assets/images/swamiseva-logo.jpg",
+      "backgroundColor": "#0B2D6B",
       "resizeMode": "contain"
     },
     "ios": {
@@ -24,7 +26,8 @@
       "package": "com.deekshajourney.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#1B4332"
+        "foregroundImage": "./assets/images/swamiseva-logo.jpg",
+        "backgroundColor": "#0B2D6B"
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -50,12 +53,15 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Deeksha Journey to find nearby temples during your pilgrimage."
+          "locationWhenInUsePermission": "Allow Swamiseva to find nearby temples during your pilgrimage."
         }
       ],
       "expo-localization",
       "expo-web-browser"
     ],
+    "web": {
+      "favicon": "./assets/images/swamiseva-logo.jpg"
+    },
     "experiments": {
       "typedRoutes": true
     }

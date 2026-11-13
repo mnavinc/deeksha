@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
-import { SacredIcon } from '@/components/SacredIcons';
+import { SwamisevaLogo } from '@/components/SwamisevaLogo';
 import { useI18n } from '@/i18n';
 import { sendProfileCompletionReminderNotification } from '@/utils/notifications';
 
@@ -163,8 +163,8 @@ export default function InviteScreen() {
 
   const handleDownloadApkAndJoin = () => {
     const confirmMsg = isTe
-      ? 'Deeksha Journey Android APK డౌన్‌లోడ్ చేయాలా? (~45 MB)'
-      : 'Download Deeksha Journey Android APK (~45 MB) to install and auto-join this Sannidhanam?';
+      ? 'Swamiseva Android APK డౌన్‌లోడ్ చేయాలా? (~45 MB)'
+      : 'Download Swamiseva Android APK (~45 MB) to install and auto-join this Sannidhanam?';
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.confirm(confirmMsg)) {
         void startApkDownload();
@@ -194,11 +194,11 @@ export default function InviteScreen() {
         ]}
       >
         <View style={styles.iconWrap}>
-          <SacredIcon name="temple" size={44} color="#FFFBE6" accent={colors.primary} />
+          <SwamisevaLogo size={68} />
         </View>
 
         <Text style={[styles.eyebrow, { color: colors.primary }]}>
-          {isTe ? 'QR సన్నిధానం ఆహ్వానం' : 'QR SANNIDHANAM INVITE'}
+          {isTe ? 'SWAMISEVA · QR సన్నిధానం ఆహ్వానం' : 'SWAMISEVA · QR SANNIDHANAM INVITE'}
         </Text>
         <Text style={[styles.title, { color: colors.text }]}>{sannidhanamName}</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>

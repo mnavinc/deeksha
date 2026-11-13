@@ -2,15 +2,15 @@ import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 const SITE_URL = 'https://deeksha-sigma.vercel.app';
-const SITE_TITLE = 'Deeksha Journey — Swamiye Saranam Ayyappa | 41-Day Vrutham, Pooja Vidhanam & Sabarimala Guide';
+const SITE_TITLE = 'Swamiseva — Sincere Pathway | Ayyappa Deeksha, Pooja Vidhanam & Sabarimala Guide';
 const SITE_DESC =
-  'Bilingual (English & Telugu) spiritual companion for Ayyappa Deeksha: 41-day Vrutham tracker, interactive 108-bead Japamala, Pooja Vidhanam, Kanni Swamy guide, Sabarimala jungle trail map, and Sannidhanam group coordination.';
-const OG_IMAGE = `${SITE_URL}/og-card.svg`;
+  'Swamiseva (Sincere Pathway): Bilingual spiritual companion for Ayyappa Deeksha, 41-day Vrutham tracker, 108-bead Japamala, Pooja Vidhanam, Sabarimala trail map, and Sannidhanam community.';
+const OG_IMAGE = `${SITE_URL}/swamiseva-logo.jpg`;
 
 const JSON_LD = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'Deeksha Journey',
+  name: 'Swamiseva — Sincere Pathway',
   url: SITE_URL,
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web, Android, iOS',
@@ -37,13 +37,13 @@ export default function Root({ children }: PropsWithChildren) {
           name="keywords"
           content="Ayyappa Deeksha, Sabarimala, 41 day vrutham, Kanni Swamy, Pooja Vidhanam, Harivarasanam, Sharanu Gosha, Telugu Ayyappa mantras, Sannidhanam, Irumudi, Virtual Q Sabarimala"
         />
-        <meta name="theme-color" content="#1B4332" />
+        <meta name="theme-color" content="#0B2D6B" />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={SITE_URL} />
 
         {/* OpenGraph for WhatsApp, Telegram, Instagram, Facebook, LinkedIn */}
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Deeksha Journey" />
+        <meta property="og:site_name" content="Swamiseva" />
         <meta property="og:title" content={SITE_TITLE} />
         <meta property="og:description" content={SITE_DESC} />
         <meta property="og:url" content={SITE_URL} />

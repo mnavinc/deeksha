@@ -18,7 +18,7 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { getSwamiTier } from '@/data/swamiNames';
-import { SacredIcon } from '@/components/SacredIcons';
+import { SwamisevaLogo } from '@/components/SwamisevaLogo';
 
 export function HeaderNav() {
   const { t, language } = useI18n();
@@ -93,10 +93,10 @@ export function HeaderNav() {
       >
         {/* Branding Logo */}
         <TouchableOpacity style={styles.brandRow} onPress={() => router.push('/(tabs)')}>
-          <SacredIcon name="temple" size={28} withBadge />
+          <SwamisevaLogo size={34} />
           <View>
-            <Text style={[styles.brandTitle, { color: colors.text }]}>Deeksha Journey</Text>
-            <Text style={[styles.brandSaranam, { color: colors.primary }]}>{t('saranam')}</Text>
+            <Text style={[styles.brandTitle, { color: colors.text }]}>Swamiseva</Text>
+            <Text style={[styles.brandSaranam, { color: colors.primary }]}>Sincere Pathway</Text>
           </View>
         </TouchableOpacity>
 

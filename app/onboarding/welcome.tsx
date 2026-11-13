@@ -13,6 +13,7 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle, getClayButtonStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { AuthModal } from '@/components/AuthModal';
+import { SwamisevaLogo } from '@/components/SwamisevaLogo';
 
 export default function WelcomeScreen() {
   const { t, language } = useI18n();
@@ -57,9 +58,9 @@ export default function WelcomeScreen() {
       {/* Top Branding Section */}
       <View style={styles.topSection}>
         <View style={[styles.logoCard, getClayStyle(activeTheme, 'high', colors.surface)]}>
-          <Text style={styles.logoSymbol}>🛕</Text>
+          <SwamisevaLogo size={72} />
         </View>
-        <Text style={[styles.saranamText, { color: colors.primary }]}>{t('saranam')}</Text>
+        <Text style={[styles.saranamText, { color: colors.primary }]}>SWAMISEVA · SINCERE PATHWAY</Text>
         <Text style={[styles.welcomeTitle, { color: colors.text }]}>{t('welcomeTitle')}</Text>
         <Text style={[styles.welcomeBody, { color: colors.textMuted }]}>{t('welcomeBody')}</Text>
       </View>

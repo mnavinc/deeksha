@@ -2,39 +2,39 @@ import { useColorScheme } from 'react-native';
 import { useAppStore } from '@/store/useAppStore';
 
 export const darkColors = {
-  background: '#0D1117',
-  surface: '#161B22',
-  surfaceElevated: '#21262D',
-  border: '#30363D',
-  text: '#F0F6FC',
-  textMuted: '#B0BEC5',   // was #8B949E — brighter for readability
-  textDim: '#8B949E',     // was #6E7681 — was barely visible in dark
-  primary: '#F0B429',
-  primaryDark: '#D4A017',
+  background: '#071B42',
+  surface: '#0B2D6B',       // Divine Blue
+  surfaceElevated: '#123B85',
+  border: '#1E4B9E',
+  text: '#FFF8E1',          // Sacred Cream
+  textMuted: '#D6E2F5',
+  textDim: '#9CB4DB',
+  primary: '#F7931E',       // Saffron
+  primaryDark: '#D4AF37',   // Golden
   success: '#3FB950',
-  warning: '#D29922',
+  warning: '#F7931E',
   error: '#F85149',
-  ayyappaGold: '#F0B429',
-  ayyappaBlack: '#1a1a2e',
-  accent: '#58A6FF',
+  ayyappaGold: '#D4AF37',
+  ayyappaBlack: '#071B42',
+  accent: '#2E86EB',        // Sky Blue
 };
 
 export const lightColors = {
-  background: '#F6F8FA',
+  background: '#FFF8E1',    // Sacred Cream
   surface: '#FFFFFF',
-  surfaceElevated: '#EAEEF2',
-  border: '#D0D7DE',
-  text: '#1F2328',
-  textMuted: '#424A53',   // was #57606A — darker for better contrast on light bg
-  textDim: '#57606A',     // was #6E7781
-  primary: '#D49000',
-  primaryDark: '#B37800',
+  surfaceElevated: '#FFF2CC',
+  border: '#E6D6A8',
+  text: '#0B2D6B',          // Divine Blue
+  textMuted: '#2B4A80',
+  textDim: '#4E6B9E',
+  primary: '#F7931E',       // Saffron
+  primaryDark: '#D4AF37',   // Golden
   success: '#1F883D',
   warning: '#9A6700',
   error: '#CF222E',
-  ayyappaGold: '#D49000',
-  ayyappaBlack: '#1a1a2e',
-  accent: '#0969DA',
+  ayyappaGold: '#D4AF37',
+  ayyappaBlack: '#0B2D6B',
+  accent: '#2E86EB',        // Sky Blue
 };
 
 
