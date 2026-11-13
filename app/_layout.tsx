@@ -34,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="contact" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />
         <Stack.Screen name="guide" options={{ headerShown: false }} />
+        <Stack.Screen name="invite" options={{ headerShown: false }} />
         <Stack.Screen name="expenses/add" options={{ title: 'Add Expense' }} />
       </Stack>
       <ChatbotWidget />

@@ -41,6 +41,16 @@ export interface UserProfile {
   onboardingComplete: boolean;
 }
 
+export interface UserActionLog {
+  id: string;
+  action: string;
+  sannidhanamId?: string;
+  referrerId?: string;
+  joinedDate?: string;
+  eventTags: string[];
+  createdAt: string;
+}
+
 interface AppState {
   authToken: string | null;
   backendEnrollmentId: string | null;
@@ -60,12 +70,25 @@ interface AppState {
   fontScale: 'normal' | 'large' | 'xlarge';
   highContrast: boolean;
   reduceMotion: boolean;
+  joinedSannidhanamId: string | null;
+  referrerId: string | null;
+  joinedDate: string | null;
+  userActionLogs: UserActionLog[];
 
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   toggleNotifications: () => void;
   setFontScale: (fontScale: 'normal' | 'large' | 'xlarge') => void;
   toggleHighContrast: () => void;
   toggleReduceMotion: () => void;
+  logUserAction: (action: string, eventTags: string[], extra?: { sannidhanamId?: string; referrerId?: string; joinedDate?: string }) => void;
+  joinSannidhanamByQr: (params: {
+    sannidhanamId: string;
+    sannidhanamName: string;
+    season: string;
+    referrerId: string;
+    eventTag: string;
+    memberName: string;
+  }) => void;
   setAuth: (token: string, profile: UserProfile) => void;
   hydrateFromBackend: () => Promise<boolean>;
   signOut: () => void;
@@ -139,6 +162,10 @@ export const useAppStore = create<AppState>()(
       fontScale: 'normal',
       highContrast: false,
       reduceMotion: false,
+      joinedSannidhanamId: null,
+      referrerId: null,
+      joinedDate: null,
+      userActionLogs: [],
       lastDailyCheckinDate: null,
 
       setTheme: (theme) => set({ theme }),
@@ -417,6 +444,93 @@ export const useAppStore = create<AppState>()(
           guruApprovalCount: 0,
         };
         set({ groups: [...groups, group] });
+      },
+
+      logUserAction: (action, eventTags, extra) => {
+        const entry: UserActionLog = {
+          id: generateId(),
+          action,
+          sannidhanamId: extra?.sannidhanamId,
+          referrerId: extra?.referrerId,
+          joinedDate: extra?.joinedDate,
+          eventTags,
+          createdAt: new Date().toISOString(),
+        };
+        set((s) => ({
+          userActionLogs: [entry, ...s.userActionLogs].slice(0, 100),
+        }));
+      },
+
+      joinSannidhanamByQr: ({ sannidhanamId, sannidhanamName, season, referrerId, eventTag, memberName }) => {
+        const nowIso = new Date().toISOString();
+        const currentProfile = get().profile;
+        const activeProfile: UserProfile = currentProfile ?? {
+          id: generateId(),
+          name: memberName.trim() || 'Swami',
+          language: 'en',
+          pilgrimageCount: 1,
+          onboardingComplete: true,
+        };
+
+        const existingGroups = get().groups;
+        const existingIndex = existingGroups.findIndex((g) => g.id === sannidhanamId);
+        let updatedGroups: PilgrimageGroup[];
+
+        if (existingIndex >= 0) {
+          const target = existingGroups[existingIndex];
+          const alreadyMember = target.members.some(
+            (m) => m.userId === activeProfile.id || m.name.toLowerCase() === activeProfile.name.toLowerCase()
+          );
+          const updatedTarget = alreadyMember
+            ? target
+            : {
+                ...target,
+                members: [
+                  ...target.members,
+                  { userId: activeProfile.id, name: activeProfile.name, role: 'MEMBER' as const },
+                ],
+              };
+          updatedGroups = existingGroups.map((g, idx) => (idx === existingIndex ? updatedTarget : g));
+        } else {
+          const newGroup: PilgrimageGroup = {
+            id: sannidhanamId,
+            name: sannidhanamName,
+            season,
+            members: [
+              { userId: activeProfile.id, name: activeProfile.name, role: 'MEMBER' },
+            ],
+            announcements: [],
+            messages: [
+              {
+                id: generateId(),
+                author: 'Sannidhanam',
+                text: `${activeProfile.name} joined via QR invite! Swamiye Saranam Ayyappa 🙏`,
+                createdAt: nowIso,
+              },
+            ],
+            guruApprovalCount: 0,
+          };
+          updatedGroups = [newGroup, ...existingGroups];
+        }
+
+        const logEntry: UserActionLog = {
+          id: generateId(),
+          action: 'joined_sannidhanam_qr',
+          sannidhanamId,
+          referrerId,
+          joinedDate: nowIso,
+          eventTags: Array.from(new Set([eventTag, 'qr_invite', 'sannidhanam_join', 'no_pii_join'])),
+          createdAt: nowIso,
+        };
+
+        set((s) => ({
+          profile: activeProfile,
+          groups: updatedGroups,
+          joinedSannidhanamId: sannidhanamId,
+          referrerId,
+          joinedDate: nowIso,
+          userActionLogs: [logEntry, ...s.userActionLogs].slice(0, 100),
+        }));
       },
 
       addExpense: (expense) => {

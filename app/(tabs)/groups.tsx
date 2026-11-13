@@ -8,6 +8,8 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { HeaderNav } from '@/components/HeaderNav';
+import { QrCodeSvg } from '@/components/QrCodeSvg';
+import { buildSannidhanamInviteUrl, parseSannidhanamInvitePayload } from '@/engines/qrInviteEngine';
 
 export default function GroupsScreen() {
   const groups = useAppStore((s) => s.groups);
@@ -18,6 +20,9 @@ export default function GroupsScreen() {
   const setRole = useAppStore((s) => s.setGroupMemberRole);
   const addMessage = useAppStore((s) => s.addGroupMessage);
   const nominate = useAppStore((s) => s.nominateGroupGuru);
+  const profile = useAppStore((s) => s.profile);
+  const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
+  const userActionLogs = useAppStore((s) => s.userActionLogs);
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
   const colors = useThemeColors();
@@ -29,6 +34,7 @@ export default function GroupsScreen() {
   const [noteInput, setNoteInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [inviteStatus, setInviteStatus] = useState('');
+  const [qrInput, setQrInput] = useState('');
 
   const group = groups[0];
 
@@ -100,11 +106,35 @@ export default function GroupsScreen() {
 
   const isVerifiedGroup = Boolean(group.guruName);
 
-  const inviteUrl = 'https://deeksha-sigma.vercel.app/groups';
+  const inviteUrl = buildSannidhanamInviteUrl({
+    sannidhanamId: group.id,
+    sannidhanamName: group.name,
+    season: group.season,
+    referrerId: profile?.id ?? 'guru-swami',
+    eventTag: 'qr_sannidhanam_invite',
+  });
   const inviteText =
     language === 'te'
       ? `🙏 స్వామియే శరణం అయ్యప్ప!\n"${group.name}" సన్నిధానం గ్రూపులో చేరండి (${group.season}).\nదీక్ష ట్రాకర్, పూజా విధానం & యాత్ర మార్గదర్శి:`
       : `🙏 Swamiye Saranam Ayyappa!\nJoin our "${group.name}" Sannidhanam circle (${group.season}) on Deeksha Journey:`;
+
+  const handleJoinByQrInput = () => {
+    const parsed = parseSannidhanamInvitePayload(qrInput);
+    if (!parsed) {
+      setInviteStatus(language === 'te' ? 'సరైన QR లింక్ నమోదు చేయండి.' : 'Please paste a valid QR invite link.');
+      return;
+    }
+    joinSannidhanamByQr({
+      ...parsed,
+      memberName: profile?.name ?? 'Swami',
+    });
+    setQrInput('');
+    setInviteStatus(
+      language === 'te'
+        ? `"${parsed.sannidhanamName}" సన్నిధానంలో చేరారు!`
+        : `Joined "${parsed.sannidhanamName}" via QR (${parsed.eventTag})!`
+    );
+  };
 
   const shareToWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(`${inviteText}\n${inviteUrl}`)}`;
@@ -163,16 +193,22 @@ export default function GroupsScreen() {
           </View>
         </View>
 
-        {/* Invite Swamis to Sannidhanam (WhatsApp / Telegram / Instagram) */}
+        {/* Invite Swamis to Sannidhanam (QR Code + WhatsApp / Telegram / Instagram) */}
         <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.section, { color: colors.text }]}>
-            {language === 'te' ? 'సన్నిధానం ఆహ్వానం • Invite Swamis' : 'Invite Swamis to Sannidhanam'}
+            {language === 'te' ? 'సన్నిధానం QR ఆహ్వానం • QR & Social Invite' : 'Sannidhanam QR & Social Invite'}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             {language === 'te'
-              ? 'WhatsApp, Telegram లేదా Instagram ద్వారా మీ గ్రూపు లింక్‌ను పంపండి'
-              : 'Share your Sannidhanam circle with rich preview via WhatsApp, Telegram, or Instagram'}
+              ? 'ఈ QR కోడ్ స్కాన్ చేసి మొబైల్/ఇమెయిల్ లేకుండానే సన్నిధానంలో చేరవచ్చు'
+              : 'Scan this safe QR code (no phone/email needed) or share via WhatsApp, Telegram & Instagram'}
           </Text>
+          <View style={styles.qrCenter}>
+            <QrCodeSvg value={inviteUrl} size={156} />
+            <Text style={[styles.subtitle, { color: colors.textDim, textAlign: 'center', marginTop: 6 }]}>
+              ID: {group.id.slice(0, 14)} · Tag: qr_sannidhanam_invite
+            </Text>
+          </View>
           <View style={styles.shareRow}>
             <TouchableOpacity
               onPress={shareToWhatsApp}
@@ -204,6 +240,27 @@ export default function GroupsScreen() {
               <Text style={[styles.shareBtnText, { color: '#F472B6' }]}>Instagram</Text>
             </TouchableOpacity>
           </View>
+          {/* Paste scanned QR invite URL */}
+          <View style={[styles.addRow, { borderColor: colors.border, marginTop: 6 }]}>
+            <TextInput
+              value={qrInput}
+              onChangeText={setQrInput}
+              placeholder={language === 'te' ? 'QR ఆహ్వాన లింక్ పేస్ట్ చేయండి...' : 'Paste scanned QR invite link...'}
+              placeholderTextColor={colors.textDim}
+              style={[styles.memberInput, { color: colors.text }]}
+            />
+            <TouchableOpacity
+              onPress={handleJoinByQrInput}
+              style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+            >
+              <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'చేరండి' : 'Join QR'}</Text>
+            </TouchableOpacity>
+          </View>
+          {userActionLogs.length > 0 && (
+            <Text style={[styles.subtitle, { color: colors.primary }]}>
+              ✓ {userActionLogs.length} action log(s) · Latest tag: {userActionLogs[0].eventTags.join(', ')}
+            </Text>
+          )}
           {inviteStatus ? (
             <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
           ) : null}
@@ -407,6 +464,11 @@ const styles = StyleSheet.create({
   verifiedGuruRow: { gap: 2 },
   good: { color: '#34d399', fontSize: 12, fontWeight: '700' },
   verifiedSubText: { color: '#34d399', fontSize: 11, fontStyle: 'italic' },
+  qrCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
   shareRow: {
     flexDirection: 'row',
     gap: 8,
