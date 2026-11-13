@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { getJourneyForDeeksha } from '@/data/journeyCheckpoints';
 import { useAppStore } from '@/store/useAppStore';
@@ -37,6 +38,7 @@ export default function JourneyScreen() {
 
   const day = getCurrentDay(enrollment);
   const items = getJourneyForDeeksha(enrollment.deekshaId);
+  const isTe = t('home') === 'హోమ్';
 
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
@@ -76,6 +78,53 @@ export default function JourneyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Official Sabarimala Virtual-Q Darshan & Prasadams Card */}
+        <View
+          style={[
+            styles.bookingCard,
+            getClayStyle(activeTheme, 'medium'),
+            { backgroundColor: colors.surface, borderColor: colors.primary },
+          ]}
+        >
+          <View style={styles.bookingTop}>
+            <SacredIcon name="temple" size={28} color="#FFFBE6" accent={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bookingTitle, { color: colors.text }]}>
+                {isTe ? 'శబరిమల అధికారిక దర్శనం & ప్రసాదాలు' : 'Official Sabarimala Darshan & Prasadams'}
+              </Text>
+              <Text style={[styles.bookingSub, { color: colors.textMuted }]}>
+                {isTe
+                  ? 'Travancore Devaswom Board Virtual-Q స్లాట్, అప్పం & అరవణ ప్రసాదం బుకింగ్ (sabarimalaonline.org)'
+                  : 'Travancore Devaswom Board Virtual-Q slot, Appam & Aravana Prasadam booking'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.bookingActions}>
+            <TouchableOpacity
+              style={[styles.bookingBtnPrimary, { backgroundColor: colors.primary }]}
+              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
+              accessibilityRole="link"
+              accessibilityLabel="Book Official Sabarimala Virtual-Q Darshan"
+            >
+              <Ionicons name="calendar-outline" size={16} color="#0D1117" />
+              <Text style={styles.bookingBtnPrimaryText}>
+                {isTe ? 'వర్చువల్-Q దర్శనం' : 'Virtual-Q Darshan'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bookingBtnOutline, { borderColor: colors.primary, backgroundColor: `${colors.primary}18` }]}
+              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
+              accessibilityRole="link"
+              accessibilityLabel="Book Sabarimala Appam and Aravana Prasadams"
+            >
+              <Ionicons name="gift-outline" size={16} color={colors.primary} />
+              <Text style={[styles.bookingBtnOutlineText, { color: colors.primary }]}>
+                {isTe ? 'అప్పం / అరవణ ప్రసాదం' : 'Prasadams & Vazhipadu'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {viewMode === 'map' ? (
           /* ── MAP VIEW ── */
           <>
@@ -103,8 +152,8 @@ export default function JourneyScreen() {
               const phaseName = t(phaseKey) !== phaseKey ? t(phaseKey) : item.phase;
 
               return (
+                <Animated.View key={item.id} entering={FadeInDown.delay(Math.min(index * 45, 450)).duration(320)}>
                 <TouchableOpacity
-                  key={item.id}
                   disabled={!unlocked}
                   onPress={() => unlock(item.id)}
                   style={styles.timelineRow}
@@ -151,6 +200,7 @@ export default function JourneyScreen() {
                     </Text>
                   </View>
                 </TouchableOpacity>
+                </Animated.View>
               );
             })}
             <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
@@ -184,6 +234,40 @@ const styles = StyleSheet.create({
   },
   toggleText: { fontSize: 13, fontWeight: '600' },
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 60 },
+  bookingCard: {
+    borderWidth: 1.5,
+    borderRadius: 18,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  bookingTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  bookingTitle: { fontSize: 15, fontWeight: '800' },
+  bookingSub: { fontSize: 12, marginTop: 2, lineHeight: 17 },
+  bookingActions: { flexDirection: 'row', gap: spacing.sm, marginTop: 4 },
+  bookingBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    minHeight: 44,
+  },
+  bookingBtnPrimaryText: { color: '#0D1117', fontSize: 12, fontWeight: '800' },
+  bookingBtnOutline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    minHeight: 44,
+  },
+  bookingBtnOutlineText: { fontSize: 12, fontWeight: '800' },
   timelineRow: { flexDirection: 'row', gap: 12 },
   connectorCol: { alignItems: 'center', width: 20 },
   dot: { width: 20, height: 20, borderRadius: 10, zIndex: 1, borderWidth: 2 },

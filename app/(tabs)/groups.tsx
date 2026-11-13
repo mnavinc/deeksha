@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { calculateBalances, suggestSettlements } from '@/engines/expenseEngine';
@@ -28,6 +28,7 @@ export default function GroupsScreen() {
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [noteInput, setNoteInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
 
   const group = groups[0];
 
@@ -99,6 +100,39 @@ export default function GroupsScreen() {
 
   const isVerifiedGroup = Boolean(group.guruName);
 
+  const inviteUrl = 'https://deeksha-sigma.vercel.app/groups';
+  const inviteText =
+    language === 'te'
+      ? `🙏 స్వామియే శరణం అయ్యప్ప!\n"${group.name}" సన్నిధానం గ్రూపులో చేరండి (${group.season}).\nదీక్ష ట్రాకర్, పూజా విధానం & యాత్ర మార్గదర్శి:`
+      : `🙏 Swamiye Saranam Ayyappa!\nJoin our "${group.name}" Sannidhanam circle (${group.season}) on Deeksha Journey:`;
+
+  const shareToWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(`${inviteText}\n${inviteUrl}`)}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const shareToTelegram = () => {
+    const url = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(inviteText)}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const shareToInstagram = async () => {
+    const fullText = `${inviteText}\n${inviteUrl}`;
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(fullText);
+        setInviteStatus(
+          language === 'te'
+            ? 'ఆహ్వాన లింక్ కాపీ చేయబడింది! Instagram DM / Storyలో పేస్ట్ చేయండి.'
+            : 'Invite copied! Paste in Instagram DM or Story.'
+        );
+      } catch {}
+      Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => {});
+    } else {
+      await Share.share({ message: fullText, url: inviteUrl }).catch(() => {});
+    }
+  };
+
   const filteredMembers = group.members.filter((m) =>
     memberSearchQuery.trim() === ''
       ? true
@@ -127,6 +161,52 @@ export default function GroupsScreen() {
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{group.members.length}</Text>
           </View>
+        </View>
+
+        {/* Invite Swamis to Sannidhanam (WhatsApp / Telegram / Instagram) */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.section, { color: colors.text }]}>
+            {language === 'te' ? 'సన్నిధానం ఆహ్వానం • Invite Swamis' : 'Invite Swamis to Sannidhanam'}
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {language === 'te'
+              ? 'WhatsApp, Telegram లేదా Instagram ద్వారా మీ గ్రూపు లింక్‌ను పంపండి'
+              : 'Share your Sannidhanam circle with rich preview via WhatsApp, Telegram, or Instagram'}
+          </Text>
+          <View style={styles.shareRow}>
+            <TouchableOpacity
+              onPress={shareToWhatsApp}
+              accessibilityRole="button"
+              accessibilityLabel="Invite via WhatsApp"
+              style={[styles.shareBtn, { backgroundColor: '#25D3661E', borderColor: '#25D366' }]}
+            >
+              <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+              <Text style={[styles.shareBtnText, { color: '#25D366' }]}>WhatsApp</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={shareToTelegram}
+              accessibilityRole="button"
+              accessibilityLabel="Invite via Telegram"
+              style={[styles.shareBtn, { backgroundColor: '#0088CC1E', borderColor: '#0088CC' }]}
+            >
+              <Ionicons name="paper-plane" size={18} color="#38BDF8" />
+              <Text style={[styles.shareBtnText, { color: '#38BDF8' }]}>Telegram</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={shareToInstagram}
+              accessibilityRole="button"
+              accessibilityLabel="Invite via Instagram"
+              style={[styles.shareBtn, { backgroundColor: '#E1306C1E', borderColor: '#E1306C' }]}
+            >
+              <Ionicons name="logo-instagram" size={18} color="#F472B6" />
+              <Text style={[styles.shareBtnText, { color: '#F472B6' }]}>Instagram</Text>
+            </TouchableOpacity>
+          </View>
+          {inviteStatus ? (
+            <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
+          ) : null}
         </View>
 
         {/* Guru Swamy Verification & Nomination */}
@@ -327,6 +407,26 @@ const styles = StyleSheet.create({
   verifiedGuruRow: { gap: 2 },
   good: { color: '#34d399', fontSize: 12, fontWeight: '700' },
   verifiedSubText: { color: '#34d399', fontSize: 11, fontStyle: 'italic' },
+  shareRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  shareBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 44,
+  },
+  shareBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',

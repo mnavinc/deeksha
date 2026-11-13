@@ -3,55 +3,67 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://deeksha-sigma.vercel.app/</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://deeksha-sigma.vercel.app/vidhanam</loc>
-    <lastmod>2026-08-14</lastmod>
+    <loc>https://deeksha-sigma.vercel.app/journey</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://deeksha-sigma.vercel.app/store</loc>
-    <lastmod>2026-08-14</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://deeksha-sigma.vercel.app/vidhanam</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://deeksha-sigma.vercel.app/guide</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://deeksha-sigma.vercel.app/groups</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://deeksha-sigma.vercel.app/map</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://deeksha-sigma.vercel.app/donations</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://deeksha-sigma.vercel.app/faqs</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://deeksha-sigma.vercel.app/about</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://deeksha-sigma.vercel.app/contact</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deeksha-sigma.vercel.app/privacy</loc>
-    <lastmod>2026-08-14</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://deeksha-sigma.vercel.app/terms</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>

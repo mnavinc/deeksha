@@ -7,10 +7,12 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useAppStore } from '@/store/useAppStore';
 import Svg, {
   Circle, Path, Ellipse, G, Rect,
   Defs, RadialGradient, Stop, LinearGradient, Polygon,
@@ -65,6 +67,68 @@ const PHASE_COLORS = {
   completion:  { fill: '#A78BFA', stroke: '#EDE9FE' },
 };
 
+const FIREFLIES = [
+  { x: 0.16, y: 0.78, delay: 0, size: 5 },
+  { x: 0.78, y: 0.70, delay: 400, size: 4 },
+  { x: 0.25, y: 0.56, delay: 800, size: 5 },
+  { x: 0.74, y: 0.44, delay: 200, size: 4 },
+  { x: 0.22, y: 0.28, delay: 650, size: 5 },
+  { x: 0.68, y: 0.16, delay: 300, size: 6 },
+];
+
+function JungleFirefly({ x, y, delay, size }: { x: number; y: number; delay: number; size: number }) {
+  const driftY = useSharedValue(0);
+  const opacity = useSharedValue(0.2);
+
+  useEffect(() => {
+    driftY.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(-12, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(0.9, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.2, { duration: 1800, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+  }, [delay, driftY, opacity]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: driftY.value }],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          left: `${x * 100}%`,
+          top: `${y * 100}%`,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#FDE68A',
+        },
+        animStyle,
+      ]}
+    />
+  );
+}
+
 type Props = {
   checkpoints: JourneyCheckpoint[];
   currentDay: number;
@@ -81,6 +145,7 @@ export const JourneyTrailMap = React.memo(function JourneyTrailMap({
   onUnlockMilestone,
 }: Props) {
   const { language } = useI18n();
+  const reduceMotion = useAppStore((s) => s.reduceMotion);
   const { width: screenW } = useWindowDimensions();
   const mapW = Math.max(280, Math.min(screenW - 32, 520));
   const mapH = Math.round(mapW * 1.62);
@@ -195,9 +260,25 @@ export const JourneyTrailMap = React.memo(function JourneyTrailMap({
           strokeLinecap="round"
         />
 
-        {/* Forest Canopy Clusters */}
+        {/* Forest Canopy Clusters & Jungle Trail Trees */}
         <Ellipse cx={mapW * 0.18} cy={mapH * 0.85} rx={mapW * 0.16} ry={mapH * 0.035} fill="#40916C" opacity={0.28} />
         <Ellipse cx={mapW * 0.82} cy={mapH * 0.68} rx={mapW * 0.14} ry={mapH * 0.04} fill="#40916C" opacity={0.24} />
+        {[
+          { x: 0.10, y: 0.72 },
+          { x: 0.88, y: 0.56 },
+          { x: 0.14, y: 0.44 },
+          { x: 0.84, y: 0.26 },
+        ].map((tree, idx) => (
+          <Polygon
+            key={`tree-${idx}`}
+            points={`${mapW * tree.x},${mapH * (tree.y - 0.035)} ${mapW * (tree.x - 0.035)},${mapH * tree.y} ${mapW * (tree.x + 0.035)},${mapH * tree.y}`}
+            fill="#2D6A4F"
+            opacity={0.55}
+          />
+        ))}
+        {/* 18 Sacred Steps (Pathinettam Padi) Summit Accent */}
+        <Rect x={mapW * 0.44} y={mapH * 0.035} width={mapW * 0.12} height={4} rx={2} fill="#F0B429" opacity={0.75} />
+        <Rect x={mapW * 0.455} y={mapH * 0.025} width={mapW * 0.09} height={3} rx={1.5} fill="#FFFBE6" opacity={0.65} />
         <Ellipse cx={mapW * 0.16} cy={mapH * 0.52} rx={mapW * 0.11} ry={mapH * 0.03} fill="#52B788" opacity={0.2} />
 
         {/* Trail Outer Shadow */}
@@ -267,6 +348,12 @@ export const JourneyTrailMap = React.memo(function JourneyTrailMap({
           );
         })}
       </Svg>
+
+      {/* Drifting Forest Fireflies */}
+      {!reduceMotion &&
+        FIREFLIES.map((f, idx) => (
+          <JungleFirefly key={idx} x={f.x} y={f.y} delay={f.delay} size={f.size} />
+        ))}
 
       {/* Interactive node touch targets + crisp bilingual name labels */}
       {checkpoints.map((cp, index) => {
