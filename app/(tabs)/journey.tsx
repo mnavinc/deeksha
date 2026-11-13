@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { getJourneyForDeeksha } from '@/data/journeyCheckpoints';
@@ -17,6 +18,7 @@ type ViewMode = 'map' | 'timeline';
 export default function JourneyScreen() {
   const enrollment = useAppStore((s) => s.enrollment);
   const unlock = useAppStore((s) => s.unlockJourneyCheckpoint);
+  const groups = useAppStore((s) => s.groups);
   const { t } = useI18n();
   const colors = useThemeColors();
   const theme = useAppStore((s) => s.theme);
@@ -39,6 +41,7 @@ export default function JourneyScreen() {
   const day = getCurrentDay(enrollment);
   const items = getJourneyForDeeksha(enrollment.deekshaId);
   const isTe = t('home') === 'హోమ్';
+  const publicSannidhanams = groups.filter((g) => g.location?.isPublic);
 
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
@@ -78,53 +81,6 @@ export default function JourneyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Official Sabarimala Virtual-Q Darshan & Prasadams Card */}
-        <View
-          style={[
-            styles.bookingCard,
-            getClayStyle(activeTheme, 'medium'),
-            { backgroundColor: colors.surface, borderColor: colors.primary },
-          ]}
-        >
-          <View style={styles.bookingTop}>
-            <SacredIcon name="temple" size={28} color="#FFFBE6" accent={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bookingTitle, { color: colors.text }]}>
-                {isTe ? 'శబరిమల అధికారిక దర్శనం & ప్రసాదాలు' : 'Official Sabarimala Darshan & Prasadams'}
-              </Text>
-              <Text style={[styles.bookingSub, { color: colors.textMuted }]}>
-                {isTe
-                  ? 'Travancore Devaswom Board Virtual-Q స్లాట్, అప్పం & అరవణ ప్రసాదం బుకింగ్ (sabarimalaonline.org)'
-                  : 'Travancore Devaswom Board Virtual-Q slot, Appam & Aravana Prasadam booking'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.bookingActions}>
-            <TouchableOpacity
-              style={[styles.bookingBtnPrimary, { backgroundColor: colors.primary }]}
-              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
-              accessibilityRole="link"
-              accessibilityLabel="Book Official Sabarimala Virtual-Q Darshan"
-            >
-              <Ionicons name="calendar-outline" size={16} color="#0D1117" />
-              <Text style={styles.bookingBtnPrimaryText}>
-                {isTe ? 'వర్చువల్-Q దర్శనం' : 'Virtual-Q Darshan'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.bookingBtnOutline, { borderColor: colors.primary, backgroundColor: `${colors.primary}18` }]}
-              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
-              accessibilityRole="link"
-              accessibilityLabel="Book Sabarimala Appam and Aravana Prasadams"
-            >
-              <Ionicons name="gift-outline" size={16} color={colors.primary} />
-              <Text style={[styles.bookingBtnOutlineText, { color: colors.primary }]}>
-                {isTe ? 'అప్పం / అరవణ ప్రసాదం' : 'Prasadams & Vazhipadu'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {viewMode === 'map' ? (
           /* ── MAP VIEW ── */
           <>
@@ -135,7 +91,6 @@ export default function JourneyScreen() {
               deekshaId={enrollment.deekshaId}
               onUnlockMilestone={unlock}
             />
-            <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
           </>
         ) : (
           /* ── TIMELINE VIEW ── */
@@ -203,9 +158,103 @@ export default function JourneyScreen() {
                 </Animated.View>
               );
             })}
-            <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
           </>
         )}
+
+        {/* Public Sannidhanams on Trail */}
+        {publicSannidhanams.length > 0 && (
+          <View
+            style={[
+              styles.sannidhanamTrailCard,
+              getClayStyle(activeTheme, 'low'),
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.sannidhanamTrailHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                <Ionicons name="location" size={16} color={colors.primary} />
+                <Text style={[styles.sannidhanamTrailTitle, { color: colors.text }]}>
+                  {isTe ? 'ట్రైల్‌పై పబ్లిక్ సన్నిధానాలు' : 'Public Sannidhanams on Trail'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/map')}
+                accessibilityRole="button"
+                accessibilityLabel="Open Temples and Sannidhanams Map"
+              >
+                <Text style={[styles.sannidhanamMapLink, { color: colors.primary }]}>
+                  {isTe ? 'మ్యాప్ చూడండి →' : 'View on Map →'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {publicSannidhanams.map((g) => (
+              <TouchableOpacity
+                key={g.id}
+                onPress={() => router.push('/(tabs)/map')}
+                style={[styles.sannidhanamRow, { borderColor: colors.border }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${g.name} on map`}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sannidhanamName, { color: colors.text }]}>{g.name}</Text>
+                  <Text style={[styles.sannidhanamLoc, { color: colors.textMuted }]}>
+                    {g.location?.name} · {g.location?.latitude.toFixed(4)}, {g.location?.longitude.toFixed(4)}
+                  </Text>
+                </View>
+                <Ionicons name="navigate-outline" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Compact Official Sabarimala Virtual-Q Darshan & Prasadams Banner */}
+        <View
+          style={[
+            styles.bookingCard,
+            getClayStyle(activeTheme, 'low'),
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.bookingTop}>
+            <SacredIcon name="temple" size={24} color="#FFFBE6" accent={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bookingTitle, { color: colors.text }]}>
+                {isTe ? 'శబరిమల అధికారిక దర్శనం & ప్రసాదాలు' : 'Sabarimala Darshan & Prasadams'}
+              </Text>
+              <Text style={[styles.bookingSub, { color: colors.textMuted }]}>
+                {isTe
+                  ? 'Travancore Devaswom Board Virtual-Q & అప్పం/అరవణ బుకింగ్'
+                  : 'Official Virtual-Q slot, Appam & Aravana Prasadam'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.bookingActions}>
+            <TouchableOpacity
+              style={[styles.bookingBtnPrimary, { backgroundColor: colors.primary }]}
+              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
+              accessibilityRole="link"
+              accessibilityLabel="Book Official Sabarimala Virtual-Q Darshan"
+            >
+              <Ionicons name="calendar-outline" size={15} color="#0D1117" />
+              <Text style={styles.bookingBtnPrimaryText}>
+                {isTe ? 'వర్చువల్-Q' : 'Virtual-Q'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bookingBtnOutline, { borderColor: colors.primary, backgroundColor: `${colors.primary}18` }]}
+              onPress={() => Linking.openURL('https://sabarimalaonline.org/')}
+              accessibilityRole="link"
+              accessibilityLabel="Book Sabarimala Appam and Aravana Prasadams"
+            >
+              <Ionicons name="gift-outline" size={15} color={colors.primary} />
+              <Text style={[styles.bookingBtnOutlineText, { color: colors.primary }]}>
+                {isTe ? 'ప్రసాదాలు' : 'Prasadams'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={[styles.note, { color: colors.textDim }]}>{t('traditionalNote')}</Text>
       </ScrollView>
     </View>
   );
@@ -268,6 +317,30 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   bookingBtnOutlineText: { fontSize: 12, fontWeight: '800' },
+  sannidhanamTrailCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: spacing.md,
+    gap: 8,
+    marginTop: spacing.xs,
+  },
+  sannidhanamTrailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  sannidhanamTrailTitle: { fontSize: 14, fontWeight: '800' },
+  sannidhanamMapLink: { fontSize: 12, fontWeight: '700' },
+  sannidhanamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  sannidhanamName: { fontSize: 13, fontWeight: '700' },
+  sannidhanamLoc: { fontSize: 11, marginTop: 1 },
   timelineRow: { flexDirection: 'row', gap: 12 },
   connectorCol: { alignItems: 'center', width: 20 },
   dot: { width: 20, height: 20, borderRadius: 10, zIndex: 1, borderWidth: 2 },

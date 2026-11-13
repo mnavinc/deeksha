@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, ScrollView, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { calculateBalances, suggestSettlements } from '@/engines/expenseEngine';
@@ -22,6 +22,7 @@ export default function GroupsScreen() {
   const nominate = useAppStore((s) => s.nominateGroupGuru);
   const profile = useAppStore((s) => s.profile);
   const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
+  const setGroupPublicLocation = useAppStore((s) => s.setGroupPublicLocation);
   const userActionLogs = useAppStore((s) => s.userActionLogs);
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
@@ -35,6 +36,7 @@ export default function GroupsScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [inviteStatus, setInviteStatus] = useState('');
   const [qrInput, setQrInput] = useState('');
+  const [locNameInput, setLocNameInput] = useState('');
 
   const group = groups[0];
 
@@ -264,6 +266,93 @@ export default function GroupsScreen() {
           {inviteStatus ? (
             <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
           ) : null}
+        </View>
+
+        {/* Public Sannidhanam Location */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.section, { color: colors.text }]}>
+                {language === 'te' ? 'పబ్లిక్ సన్నిధానం లొకేషన్' : 'Public Sannidhanam Location'}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                {language === 'te'
+                  ? 'దీన్ని ఆన్ చేస్తే మ్యాప్ & జర్నీ ట్రైల్ మ్యాప్‌లో చూపబడుతుంది'
+                  : 'Visible on Temples Map & Journey Trail Map for easy meetup'}
+              </Text>
+            </View>
+            <Switch
+              value={Boolean(group.location?.isPublic)}
+              onValueChange={(next) => {
+                const current = group.location ?? {
+                  name: locNameInput.trim() || 'Sabarimala Sannidhanam',
+                  latitude: 9.4321,
+                  longitude: 77.0839,
+                  isPublic: next,
+                };
+                setGroupPublicLocation(group.id, { ...current, isPublic: next });
+              }}
+              trackColor={{ false: colors.border, true: `${colors.primary}66` }}
+              thumbColor={group.location?.isPublic ? colors.primary : colors.textDim}
+              accessibilityLabel="Toggle public Sannidhanam location visibility"
+            />
+          </View>
+          <View style={styles.shareRow}>
+            {[
+              { label: 'Sabarimala', name: 'Sabarimala Sannidhanam', latitude: 9.4321, longitude: 77.0839 },
+              { label: 'Pamba', name: 'Pamba Ganapathi', latitude: 9.4106, longitude: 77.0715 },
+              { label: 'Erumeli', name: 'Erumeli Sannidhanam', latitude: 9.4792, longitude: 76.8439 },
+            ].map((preset) => (
+              <TouchableOpacity
+                key={preset.label}
+                onPress={() => {
+                  setLocNameInput(preset.name);
+                  setGroupPublicLocation(group.id, {
+                    name: preset.name,
+                    latitude: preset.latitude,
+                    longitude: preset.longitude,
+                    isPublic: true,
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Set Sannidhanam location to ${preset.name}`}
+                style={[styles.shareBtn, { borderColor: colors.border, backgroundColor: `${colors.primary}12` }]}
+              >
+                <Ionicons name="location-outline" size={14} color={colors.primary} />
+                <Text style={[styles.shareBtnText, { color: colors.primary }]}>{preset.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={[styles.addRow, { borderColor: colors.border }]}>
+            <TextInput
+              value={locNameInput}
+              onChangeText={setLocNameInput}
+              placeholder={group.location?.name ?? (language === 'te' ? 'సన్నిధానం చిరునామా...' : 'Custom Sannidhanam spot name...')}
+              placeholderTextColor={colors.textDim}
+              style={[styles.memberInput, { color: colors.text }]}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                const name = locNameInput.trim() || group.location?.name || 'Sabarimala Sannidhanam';
+                setGroupPublicLocation(group.id, {
+                  name,
+                  latitude: group.location?.latitude ?? 9.4321,
+                  longitude: group.location?.longitude ?? 77.0839,
+                  isPublic: true,
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Save custom Sannidhanam location"
+              style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+            >
+              <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'సేవ్' : 'Save'}</Text>
+            </TouchableOpacity>
+          </View>
+          {group.location?.isPublic && (
+            <Text style={[styles.subtitle, { color: colors.success }]}>
+              ✓ {language === 'te' ? 'పబ్లిక్‌గా ఉంది:' : 'Public on Map:'} {group.location.name} ({group.location.latitude.toFixed(4)}, {group.location.longitude.toFixed(4)})
+            </Text>
+          )}
         </View>
 
         {/* Guru Swamy Verification & Nomination */}

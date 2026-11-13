@@ -21,11 +21,19 @@ export interface GroupMember {
   role: 'GROUP_ADMIN' | 'EXPENSE_MANAGER' | 'MEMBER';
 }
 
+export interface SannidhanamLocation {
+  name: string;
+  latitude: number;
+  longitude: number;
+  isPublic: boolean;
+}
+
 export interface PilgrimageGroup {
   id: string;
   name: string;
   season: string;
   route?: string;
+  location?: SannidhanamLocation;
   members: GroupMember[];
   announcements: { id: string; text: string; createdAt: string }[];
   messages: { id: string; author: string; text: string; createdAt: string }[];
@@ -88,7 +96,10 @@ interface AppState {
     referrerId: string;
     eventTag: string;
     memberName: string;
+    pilgrimageCount?: number;
+    awardPoints?: boolean;
   }) => void;
+  setGroupPublicLocation: (groupId: string, location: SannidhanamLocation) => void;
   setAuth: (token: string, profile: UserProfile) => void;
   hydrateFromBackend: () => Promise<boolean>;
   signOut: () => void;
@@ -461,14 +472,23 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      joinSannidhanamByQr: ({ sannidhanamId, sannidhanamName, season, referrerId, eventTag, memberName }) => {
+      joinSannidhanamByQr: ({
+        sannidhanamId,
+        sannidhanamName,
+        season,
+        referrerId,
+        eventTag,
+        memberName,
+        pilgrimageCount = 1,
+        awardPoints = false,
+      }) => {
         const nowIso = new Date().toISOString();
         const currentProfile = get().profile;
         const activeProfile: UserProfile = currentProfile ?? {
           id: generateId(),
           name: memberName.trim() || 'Swami',
           language: 'en',
-          pilgrimageCount: 1,
+          pilgrimageCount: Math.max(1, pilgrimageCount),
           onboardingComplete: true,
         };
 
@@ -529,7 +549,14 @@ export const useAppStore = create<AppState>()(
           joinedSannidhanamId: sannidhanamId,
           referrerId,
           joinedDate: nowIso,
+          totalPoints: awardPoints ? s.totalPoints + 50 : s.totalPoints,
           userActionLogs: [logEntry, ...s.userActionLogs].slice(0, 100),
+        }));
+      },
+
+      setGroupPublicLocation: (groupId, location) => {
+        set((s) => ({
+          groups: s.groups.map((g) => (g.id === groupId ? { ...g, location } : g)),
         }));
       },
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -36,6 +36,8 @@ export default function InviteScreen() {
   const eventTag = params.tag || 'qr_sannidhanam_invite';
 
   const [swamiName, setSwamiName] = useState(profile?.name ?? '');
+  const [earnPointsProfile, setEarnPointsProfile] = useState(true);
+  const [pilgrimageCount, setPilgrimageCount] = useState('1');
   const [joined, setJoined] = useState(false);
   const [apkTriggered, setApkTriggered] = useState(false);
 
@@ -68,7 +70,8 @@ export default function InviteScreen() {
   }, [params.s, profile?.name, joined, groups, sannidhanamId, sannidhanamName, season, referrerId, eventTag, joinSannidhanamByQr]);
 
   const handleJoin = () => {
-    const cleanName = swamiName.trim() || 'Kanni Swami';
+    const cleanName = swamiName.trim() || 'Member Swami';
+    const parsedCount = Math.max(1, parseInt(pilgrimageCount, 10) || 1);
     joinSannidhanamByQr({
       sannidhanamId,
       sannidhanamName,
@@ -76,6 +79,8 @@ export default function InviteScreen() {
       referrerId,
       eventTag,
       memberName: cleanName,
+      pilgrimageCount: parsedCount,
+      awardPoints: earnPointsProfile,
     });
     setJoined(true);
     setTimeout(() => {
@@ -83,8 +88,7 @@ export default function InviteScreen() {
     }, 600);
   };
 
-  const handleDownloadApkAndJoin = async () => {
-    // Save invite payload locally + copy deep-link handoff so the newly installed app can auto-join
+  const startApkDownload = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(deepLinkUrl);
@@ -100,6 +104,22 @@ export default function InviteScreen() {
     }
     setApkTriggered(true);
     Linking.openURL(DEFAULT_APK_URL).catch(() => {});
+  };
+
+  const handleDownloadApkAndJoin = () => {
+    const confirmMsg = isTe
+      ? 'Deeksha Journey Android APK డౌన్‌లోడ్ చేయాలా? (~45 MB)'
+      : 'Download Deeksha Journey Android APK (~45 MB) to install and auto-join this Sannidhanam?';
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(confirmMsg)) {
+        void startApkDownload();
+      }
+    } else {
+      Alert.alert('Confirm APK Download', confirmMsg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Download', onPress: () => void startApkDownload() },
+      ]);
+    }
   };
 
   const handleOpenInstalledApp = () => {
@@ -189,8 +209,27 @@ export default function InviteScreen() {
           </View>
         )}
 
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.inputLabel, { color: colors.text, marginTop: 0 }]}>
+              {isTe ? 'పాయింట్ల కోసం ప్రొఫైల్ పూర్తి చేయండి (+50 pts)' : 'Complete Profile for +50 Points'}
+            </Text>
+            <Text style={[styles.sub, { color: colors.textMuted, textAlign: 'left', fontSize: 11 }]}>
+              {isTe
+                ? 'ఆఫ్ చేస్తే అప్‌డేట్ల కోసం సాధారణ సభ్యుడిగా చేరుతారు'
+                : 'Turn off to join simply as a member for Sannidhanam updates'}
+            </Text>
+          </View>
+          <Switch
+            value={earnPointsProfile}
+            onValueChange={setEarnPointsProfile}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.surface}
+          />
+        </View>
+
         <Text style={[styles.inputLabel, { color: colors.text }]}>
-          {isTe ? 'మీ స్వామి పేరు (Swami Name)' : 'Enter Your Swami Name'}
+          {isTe ? 'మీ స్వామి పేరు (Swami Name)' : 'Your Swami Name'}
         </Text>
         <TextInput
           value={swamiName}
@@ -202,6 +241,25 @@ export default function InviteScreen() {
             { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
           ]}
         />
+
+        {earnPointsProfile && (
+          <>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              {isTe ? 'మాల ధారణ సంఖ్య (Yatra Count)' : 'Pilgrimage Count (e.g. 1 for Kanni)'}
+            </Text>
+            <TextInput
+              value={pilgrimageCount}
+              onChangeText={setPilgrimageCount}
+              keyboardType="numeric"
+              placeholder="1"
+              placeholderTextColor={colors.textDim}
+              style={[
+                styles.input,
+                { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+              ]}
+            />
+          </>
+        )}
 
         <TouchableOpacity
           style={[styles.joinBtn, { backgroundColor: colors.primary }]}
@@ -298,6 +356,13 @@ const styles = StyleSheet.create({
   },
   apkBtnOutlineText: { fontSize: 12, fontWeight: '800' },
   apkNote: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  toggleRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
   inputLabel: { alignSelf: 'flex-start', fontSize: 13, fontWeight: '700', marginTop: 4 },
   input: {
     width: '100%',

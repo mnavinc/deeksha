@@ -29,11 +29,35 @@ export default function MapScreen() {
   const [selectedTemple, setSelectedTemple] = useState<typeof SAMPLE_TEMPLES[0] | OsmTemple | null>(SAMPLE_TEMPLES[0]);
   const saved = useAppStore((s) => s.savedTempleIds);
   const save = useAppStore((s) => s.saveTemple);
+  const groups = useAppStore((s) => s.groups);
 
-  const temples = useMemo(
-    () => (nearby ?? SAMPLE_TEMPLES).filter((item) => filter === 'All' || item.deity === filter),
-    [nearby, filter]
+  const publicSannidhanamTemples = useMemo<OsmTemple[]>(
+    () =>
+      groups
+        .filter((g) => g.location?.isPublic)
+        .map((g) => ({
+          id: `sannidhanam-${g.id}`,
+          name: `${g.name} (Sannidhanam)`,
+          deity: 'Ayyappa',
+          deekshaSupported: ['Ayyappa'],
+          latitude: g.location!.latitude,
+          longitude: g.location!.longitude,
+          address: g.location!.name,
+          district: g.location!.name,
+          state: 'Public Sannidhanam',
+          malaDharanam: true,
+          verificationStatus: 'COMMUNITY_VERIFIED',
+          distanceKm: 0,
+          source: 'curated',
+        })),
+    [groups]
   );
+
+  const temples = useMemo(() => {
+    const base = nearby ?? SAMPLE_TEMPLES;
+    const combined = [...publicSannidhanamTemples, ...base];
+    return combined.filter((item) => filter === 'All' || item.deity === filter);
+  }, [nearby, publicSannidhanamTemples, filter]);
 
   const locateOpenMaps = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
