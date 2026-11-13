@@ -39,6 +39,9 @@ export default function Root({ children }: PropsWithChildren) {
         />
         <meta name="theme-color" content="#0B2D6B" />
         <meta name="robots" content="index, follow" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="shortcut icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="canonical" href={SITE_URL} />
 
         {/* OpenGraph for WhatsApp, Telegram, Instagram, Facebook, LinkedIn */}

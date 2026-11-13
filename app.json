@@ -4,13 +4,13 @@
     "slug": "swamiseva",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/swamiseva-logo.jpg",
+    "icon": "./assets/images/icon.png",
     "scheme": "deekshajourney",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "primaryColor": "#F7931E",
     "splash": {
-      "image": "./assets/images/swamiseva-logo.jpg",
+      "image": "./assets/images/splash-icon.png",
       "backgroundColor": "#0B2D6B",
       "resizeMode": "contain"
     },
@@ -26,7 +26,7 @@
       "package": "com.deekshajourney.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/swamiseva-logo.jpg",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0B2D6B"
       },
       "permissions": [
@@ -60,7 +60,7 @@
       "expo-web-browser"
     ],
     "web": {
-      "favicon": "./assets/images/swamiseva-logo.jpg"
+      "favicon": "./assets/images/favicon.png"
     },
     "experiments": {
       "typedRoutes": true
