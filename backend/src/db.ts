@@ -1,18 +1,29 @@
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 import { env } from './config.js';
 
+const useSsl =
+  env.NODE_ENV === 'production' || env.DATABASE_SSL === 'true' || env.DATABASE_SSL === 'require';
+
+function sanitizeConnectionString(rawUrl: string): string {
+  if (!useSsl) return rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    parsed.searchParams.delete('sslmode');
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 // Enterprise connection pool configuration
 export const pool = new Pool({
-  connectionString: env.DATABASE_URL,
+  connectionString: sanitizeConnectionString(env.DATABASE_URL),
   max: env.POOL_MAX,
   idleTimeoutMillis: env.POOL_IDLE_TIMEOUT_MS,
   connectionTimeoutMillis: 5_000,
   statement_timeout: 10_000,
   allowExitOnIdle: env.NODE_ENV === 'test',
-  ssl:
-    env.NODE_ENV === 'production' || env.DATABASE_SSL === 'true'
-      ? { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED }
-      : undefined,
+  ssl: useSsl ? { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED } : undefined,
 });
 
 // Guard against unhandled idle client errors crashing the process

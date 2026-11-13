@@ -23,6 +23,20 @@ if (isTest && !process.env.NODE_ENV) {
   process.env.NODE_ENV = 'test';
 }
 
+const booleanFromEnv = (defaultValue: boolean) =>
+  z.preprocess((val) => {
+    if (typeof val === 'string') {
+      const normalized = val.trim().toLowerCase();
+      if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === '') {
+        return false;
+      }
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+        return true;
+      }
+    }
+    return val;
+  }, z.boolean().default(defaultValue));
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default(isTest ? 'test' : 'development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -31,7 +45,7 @@ const envSchema = z.object({
     .default(isTest ? 'postgresql://postgres:postgres@localhost:5432/deeksha_test' : '')
     .refine((val) => isTest || val.length > 0, { message: 'DATABASE_URL is required' }),
   DATABASE_SSL: z.enum(['true', 'false', 'require']).optional(),
-  DATABASE_SSL_REJECT_UNAUTHORIZED: z.coerce.boolean().default(false),
+  DATABASE_SSL_REJECT_UNAUTHORIZED: booleanFromEnv(false),
   JWT_SECRET: z
     .string()
     .default(
@@ -53,7 +67,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 
   // Test / Demo Credentials Support
-  ENABLE_TEST_LOGIN: z.coerce.boolean().default(true),
+  ENABLE_TEST_LOGIN: booleanFromEnv(true),
 
   // SMTP Email Settings
   SMTP_HOST: z.string().default('smtp.gmail.com'),
