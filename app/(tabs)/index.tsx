@@ -8,6 +8,8 @@ import { calculateDayPoints } from '@/engines/gamificationEngine';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { ProgressBar } from '@/components/ProgressBar';
 import { DailyChecklist } from '@/components/DailyChecklist';
+import { InteractiveJapamala } from '@/components/InteractiveJapamala';
+import { SacredCelebrationBurst } from '@/components/SacredCelebrationBurst';
 import { HeaderNav } from '@/components/HeaderNav';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
@@ -34,6 +36,7 @@ export default function HomeScreen() {
 
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [checkinDone, setCheckinDone] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
   const [pulseAnim] = useState(() => new Animated.Value(1));
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -42,6 +45,7 @@ export default function HomeScreen() {
   const handleCheckin = useCallback(() => {
     checkAllTasks();
     setCheckinDone(true);
+    setBurstKey((k) => k + 1);
     Animated.sequence([
       Animated.timing(pulseAnim, { toValue: 1.08, duration: 150, useNativeDriver: true }),
       Animated.spring(pulseAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
@@ -77,6 +81,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
       <HeaderNav />
+      <SacredCelebrationBurst triggerKey={burstKey} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Saranam Banner */}
@@ -124,6 +129,13 @@ export default function HomeScreen() {
           points={totalPoints + pendingPoints}
           pilgrimageCount={enrollment.pilgrimageCount}
           name={profile.name}
+        />
+
+        {/* Interactive 108-Bead Japamala */}
+        <InteractiveJapamala
+          saranamCount={todayLog.saranamCount}
+          onChant={(amount) => incrementSaranam(amount)}
+          onMilestone={() => setBurstKey((k) => k + 1)}
         />
 
         <View

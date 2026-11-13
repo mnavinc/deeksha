@@ -1,6 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { DAILY_CHECKPOINTS } from '@/data/journeyCheckpoints';
 import type { DailyCheckpointId } from '@/data/journeyCheckpoints';
 import { CHECKPOINT_POINTS } from '@/data/achievements';
@@ -38,6 +45,61 @@ const CHECKPOINT_I18N_KEYS: Record<DailyCheckpointId, Parameters<ReturnType<type
   eveningPrayer: 'eveningPrayer',
 };
 
+function AnimatedChecklistRow({
+  done,
+  points,
+  label,
+  subLabel,
+  iconName,
+  onPress,
+}: {
+  done: boolean;
+  points: number;
+  label: string;
+  subLabel?: string;
+  iconName: SacredIconName;
+  onPress: () => void;
+}) {
+  const rowScale = useSharedValue(1);
+
+  const handlePress = () => {
+    rowScale.value = withSequence(
+      withTiming(0.96, { duration: 70 }),
+      withSpring(1, { damping: 12, stiffness: 260 })
+    );
+    onPress();
+  };
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: rowScale.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[styles.row, done && styles.rowDone]}
+        onPress={handlePress}
+        activeOpacity={0.75}
+      >
+        <View style={[styles.iconBadge, done && styles.iconBadgeDone]}>
+          {done ? (
+            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+          ) : (
+            <SacredIcon name={iconName} size={20} color="#FFFBE6" accent="#F0B429" />
+          )}
+        </View>
+        <View style={styles.textWrap}>
+          <Text style={[styles.label, done && styles.labelDone]}>{label}</Text>
+          {subLabel ? <Text style={styles.sub}>{subLabel}</Text> : null}
+        </View>
+        <Text style={[styles.points, done && styles.pointsDone]}>
+          {done ? '✓ ' : ''}+{points}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export const DailyChecklist = React.memo(function DailyChecklist({
   checkpoints,
   onToggle,
@@ -55,27 +117,15 @@ export const DailyChecklist = React.memo(function DailyChecklist({
         const points = CHECKPOINT_POINTS[item.id as keyof typeof CHECKPOINT_POINTS] ?? 0;
         const label = t(CHECKPOINT_I18N_KEYS[item.id]);
         return (
-          <TouchableOpacity
+          <AnimatedChecklistRow
             key={item.id}
-            style={[styles.row, done && styles.rowDone]}
+            done={done}
+            points={points}
+            label={label}
+            subLabel={item.id === 'saranam' ? chantsLabel : undefined}
+            iconName={CHECKPOINT_SACRED_ICONS[item.id]}
             onPress={() => (item.id === 'saranam' ? onSaranamPress() : onToggle(item.id))}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBadge, done && styles.iconBadgeDone]}>
-              {done ? (
-                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-              ) : (
-                <SacredIcon name={CHECKPOINT_SACRED_ICONS[item.id]} size={20} color="#FFFBE6" accent="#F0B429" />
-              )}
-            </View>
-            <View style={styles.textWrap}>
-              <Text style={[styles.label, done && styles.labelDone]}>{label}</Text>
-              {item.id === 'saranam' && (
-                <Text style={styles.sub}>{chantsLabel}</Text>
-              )}
-            </View>
-            <Text style={styles.points}>+{points}</Text>
-          </TouchableOpacity>
+          />
         );
       })}
     </View>
@@ -110,4 +160,5 @@ const styles = StyleSheet.create({
   labelDone: { color: colors.success },
   sub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   points: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  pointsDone: { color: colors.success },
 });

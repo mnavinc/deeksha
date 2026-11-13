@@ -1,8 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet, Text, View, useWindowDimensions, TouchableOpacity,
   Modal, ScrollView, Platform,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, {
   Circle, Path, Ellipse, G, Rect,
   Defs, RadialGradient, Stop, LinearGradient, Polygon,
@@ -105,6 +113,33 @@ export const JourneyTrailMap = React.memo(function JourneyTrailMap({
   const selectedUnlocked = selectedCheckpoint
     ? unlockedSet.has(selectedCheckpoint.id) || (selectedCheckpoint.dayUnlock ?? Infinity) <= currentDay
     : false;
+
+  const beaconScale = useSharedValue(1);
+  const beaconOpacity = useSharedValue(0.75);
+
+  useEffect(() => {
+    beaconScale.value = withRepeat(
+      withSequence(
+        withTiming(1.55, { duration: 1500, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+    beaconOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 1500, easing: Easing.out(Easing.quad) }),
+        withTiming(0.75, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+  }, [beaconScale, beaconOpacity]);
+
+  const beaconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: beaconScale.value }],
+    opacity: beaconOpacity.value,
+  }));
 
   return (
     <View style={[styles.frame, { width: mapW, height: mapH }]}>
@@ -241,10 +276,28 @@ export const JourneyTrailMap = React.memo(function JourneyTrailMap({
         const isFinish = index === checkpoints.length - 1;
         const px = stop.x * mapW;
         const py = stop.y * mapH;
+        const isActive = index === unlockedCount - 1;
         const label = language === 'te' ? cp.shortNameTe : cp.shortName;
 
         return (
           <View key={cp.id} style={{ position: 'absolute', left: px - 40, top: py - 22, width: 80, alignItems: 'center' }}>
+            {isActive && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  {
+                    position: 'absolute',
+                    top: -2,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    borderWidth: 2,
+                    borderColor: '#34D399',
+                  },
+                  beaconStyle,
+                ]}
+              />
+            )}
             <TouchableOpacity
               activeOpacity={0.75}
               style={styles.nodeTouch}
