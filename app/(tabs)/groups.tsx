@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Platform, ScrollView, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { calculateBalances, suggestSettlements } from '@/engines/expenseEngine';
-import { useAppStore } from '@/store/useAppStore';
+import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { HeaderNav } from '@/components/HeaderNav';
 import { QrCodeSvg } from '@/components/QrCodeSvg';
 import { buildSannidhanamInviteUrl, parseSannidhanamInvitePayload } from '@/engines/qrInviteEngine';
+import { calculateSunTimes, getTimelyDeekshaAlert } from '@/utils/solarTimes';
+import { sendProfileCompletionReminderNotification, sendTimelySolarAlertNotification } from '@/utils/notifications';
 
 export default function GroupsScreen() {
   const groups = useAppStore((s) => s.groups);
@@ -22,6 +24,10 @@ export default function GroupsScreen() {
   const nominate = useAppStore((s) => s.nominateGroupGuru);
   const profile = useAppStore((s) => s.profile);
   const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
+  const createQrTrackingLink = useAppStore((s) => s.createQrTrackingLink);
+  const qrTrackingLinks = useAppStore((s) => s.qrTrackingLinks);
+  const completeProfileForPoints = useAppStore((s) => s.completeProfileForPoints);
+  const pruneEmptySannidhanams = useAppStore((s) => s.pruneEmptySannidhanams);
   const setGroupPublicLocation = useAppStore((s) => s.setGroupPublicLocation);
   const userActionLogs = useAppStore((s) => s.userActionLogs);
   const theme = useAppStore((s) => s.theme);
@@ -37,6 +43,42 @@ export default function GroupsScreen() {
   const [inviteStatus, setInviteStatus] = useState('');
   const [qrInput, setQrInput] = useState('');
   const [locNameInput, setLocNameInput] = useState('');
+  const [showProfileGateForm, setShowProfileGateForm] = useState(false);
+  const [profileNameInput, setProfileNameInput] = useState(profile?.name && profile.name !== 'Swami' ? profile.name : '');
+  const [profilePhoneInput, setProfilePhoneInput] = useState(profile?.phone ?? '');
+  const [profileGateError, setProfileGateError] = useState('');
+
+  useEffect(() => {
+    pruneEmptySannidhanams();
+  }, [pruneEmptySannidhanams]);
+
+  const profileComplete = isProfileComplete(profile);
+  const sunTimes = calculateSunTimes();
+  const timelyAlert = getTimelyDeekshaAlert(new Date(), sunTimes, !profileComplete, language);
+
+  const handleSaveProfileGate = () => {
+    setProfileGateError('');
+    const cleanName = profileNameInput.trim();
+    const digits = profilePhoneInput.replace(/\D/g, '');
+    if (cleanName.length < 2) {
+      setProfileGateError(language === 'te' ? 'స్వామి పేరు నమోదు చేయండి.' : 'Please enter your Swami Name.');
+      return;
+    }
+    if (digits.length < 10) {
+      setProfileGateError(language === 'te' ? '10 అంకెల ఫోన్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit phone number.');
+      return;
+    }
+    const { awardedPoints } = completeProfileForPoints({
+      name: cleanName,
+      phone: profilePhoneInput.trim(),
+    });
+    setShowProfileGateForm(false);
+    setInviteStatus(
+      awardedPoints > 0
+        ? `✓ Profile completed! +${awardedPoints} points awarded & Sannidhanam posting unlocked.`
+        : '✓ Profile completed! Adding members & posting unlocked.'
+    );
+  };
 
   const group = groups[0];
 
@@ -65,9 +107,33 @@ export default function GroupsScreen() {
   };
 
   const handleAddMember = () => {
+    if (!profileComplete) {
+      setShowProfileGateForm(true);
+      setProfileGateError(
+        language === 'te'
+          ? 'సభ్యులను జోడించడానికి ముందు పేరు & ఫోన్ పూర్తి చేయండి.'
+          : 'Complete your Name & Phone before adding Sannidhanam members.'
+      );
+      return;
+    }
     if (!group || !memberInput.trim()) return;
     addMember(group.id, memberInput.trim());
     setMemberInput('');
+  };
+
+  const handlePostMessage = () => {
+    if (!profileComplete) {
+      setShowProfileGateForm(true);
+      setProfileGateError(
+        language === 'te'
+          ? 'పోస్ట్ చేయడానికి ముందు పేరు & ఫోన్ పూర్తి చేయండి.'
+          : 'Complete your Name & Phone before posting in Sannidhanam.'
+      );
+      return;
+    }
+    if (!group || !noteInput.trim()) return;
+    addMessage(group.id, noteInput.trim());
+    setNoteInput('');
   };
 
   if (!group) {
@@ -139,31 +205,88 @@ export default function GroupsScreen() {
   };
 
   const shareToWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(`${inviteText}\n${inviteUrl}`)}`;
+    const tracked = createQrTrackingLink({
+      sannidhanamId: group.id,
+      sannidhanamName: group.name,
+      season: group.season,
+      referrerId: profile?.id ?? 'guru-swami',
+      channel: 'whatsapp',
+      urlBuilder: (tid) =>
+        buildSannidhanamInviteUrl({
+          sannidhanamId: group.id,
+          sannidhanamName: group.name,
+          season: group.season,
+          referrerId: profile?.id ?? 'guru-swami',
+          eventTag: 'whatsapp_qr_invite',
+          trackingId: tid,
+        }),
+    });
+    const url = `https://wa.me/?text=${encodeURIComponent(`${inviteText}\n${tracked.url}`)}`;
     Linking.openURL(url).catch(() => {});
+    setInviteStatus(`Tracked WhatsApp link created (${tracked.trackingId})`);
   };
 
   const shareToTelegram = () => {
-    const url = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(inviteText)}`;
+    const tracked = createQrTrackingLink({
+      sannidhanamId: group.id,
+      sannidhanamName: group.name,
+      season: group.season,
+      referrerId: profile?.id ?? 'guru-swami',
+      channel: 'telegram',
+      urlBuilder: (tid) =>
+        buildSannidhanamInviteUrl({
+          sannidhanamId: group.id,
+          sannidhanamName: group.name,
+          season: group.season,
+          referrerId: profile?.id ?? 'guru-swami',
+          eventTag: 'telegram_qr_invite',
+          trackingId: tid,
+        }),
+    });
+    const url = `https://t.me/share/url?url=${encodeURIComponent(tracked.url)}&text=${encodeURIComponent(inviteText)}`;
     Linking.openURL(url).catch(() => {});
+    setInviteStatus(`Tracked Telegram link created (${tracked.trackingId})`);
   };
 
   const shareToInstagram = async () => {
-    const fullText = `${inviteText}\n${inviteUrl}`;
+    const tracked = createQrTrackingLink({
+      sannidhanamId: group.id,
+      sannidhanamName: group.name,
+      season: group.season,
+      referrerId: profile?.id ?? 'guru-swami',
+      channel: 'instagram',
+      urlBuilder: (tid) =>
+        buildSannidhanamInviteUrl({
+          sannidhanamId: group.id,
+          sannidhanamName: group.name,
+          season: group.season,
+          referrerId: profile?.id ?? 'guru-swami',
+          eventTag: 'instagram_qr_invite',
+          trackingId: tid,
+        }),
+    });
+    const fullText = `${inviteText}\n${tracked.url}`;
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(fullText);
         setInviteStatus(
           language === 'te'
-            ? 'ఆహ్వాన లింక్ కాపీ చేయబడింది! Instagram DM / Storyలో పేస్ట్ చేయండి.'
-            : 'Invite copied! Paste in Instagram DM or Story.'
+            ? `ట్రాక్డ్ ఇన్‌స్టాగ్రామ్ లింక్ కాపీ చేయబడింది (${tracked.trackingId})`
+            : `Tracked link copied (${tracked.trackingId})! Paste in Instagram DM or Story.`
         );
       } catch {}
       Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => {});
     } else {
-      await Share.share({ message: fullText, url: inviteUrl }).catch(() => {});
+      await Share.share({ message: fullText, url: tracked.url }).catch(() => {});
     }
   };
+
+  const groupTrackingLinks = qrTrackingLinks.filter((l) => l.sannidhanamId === group.id);
+  const totalTrackedJoined = groupTrackingLinks.reduce((sum, l) => sum + l.joinedMembers.length, 0);
+  const totalWithProfile = groupTrackingLinks.reduce(
+    (sum, l) => sum + l.joinedMembers.filter((jm) => jm.sharedName && jm.sharedPhone).length,
+    0
+  );
 
   const filteredMembers = group.members.filter((m) =>
     memberSearchQuery.trim() === ''
@@ -176,6 +299,77 @@ export default function GroupsScreen() {
       <HeaderNav />
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Sunrise & Sunset + Timely Alert Banner */}
+        <View
+          style={[
+            styles.card,
+            getClayStyle(activeTheme, 'low'),
+            {
+              backgroundColor: colors.surface,
+              borderColor: timelyAlert.urgency === 'warning' ? colors.primary : colors.border,
+            },
+          ]}
+        >
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.section, { color: colors.primary, fontSize: 14 }]}>
+                🌅 {sunTimes.sunrise} · 🌇 {sunTimes.sunset}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.text, fontWeight: '700', marginTop: 2 }]}>
+                {timelyAlert.title}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted, marginTop: 2 }]}>
+                {timelyAlert.body}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                if (!profileComplete) {
+                  setShowProfileGateForm((v) => !v);
+                } else {
+                  void sendTimelySolarAlertNotification();
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={profileComplete ? 'Send timely solar alert' : 'Complete profile for points'}
+              style={{ backgroundColor: `${colors.primary}20`, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 }}
+            >
+              <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>
+                {profileComplete ? 'Alert' : 'Complete'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {(!profileComplete && showProfileGateForm) && (
+            <View style={{ gap: 8, marginTop: 8, borderTopWidth: 1, borderColor: colors.border, paddingTop: 10 }}>
+              <TextInput
+                value={profileNameInput}
+                onChangeText={(txt) => { setProfileNameInput(txt); setProfileGateError(''); }}
+                placeholder={language === 'te' ? 'మీ స్వామి పేరు *' : 'Your Swami Name *'}
+                placeholderTextColor={colors.textDim}
+                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, padding: 10 }]}
+              />
+              <TextInput
+                value={profilePhoneInput}
+                onChangeText={(txt) => { setProfilePhoneInput(txt); setProfileGateError(''); }}
+                keyboardType="phone-pad"
+                placeholder={language === 'te' ? '10 అంకెల ఫోన్ నంబర్ *' : '10-digit Phone Number *'}
+                placeholderTextColor={colors.textDim}
+                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, padding: 10 }]}
+              />
+              {profileGateError ? <Text style={styles.errorText}>⚠️ {profileGateError}</Text> : null}
+              <TouchableOpacity
+                onPress={handleSaveProfileGate}
+                style={[styles.primary, { backgroundColor: colors.primary, padding: 12 }]}
+              >
+                <Text style={styles.primaryText}>
+                  {language === 'te' ? 'ప్రొఫైల్ సేవ్ చేసి +50 పాయింట్లు పొందండి' : 'Save Profile & Unlock (+50 pts)'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {/* Hero */}
         <View style={styles.hero}>
           <View style={{ flex: 1 }}>
@@ -266,6 +460,43 @@ export default function GroupsScreen() {
           {inviteStatus ? (
             <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
           ) : null}
+
+          {/* Marketing Tracking Link Analytics */}
+          <View style={{ marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderColor: colors.border, gap: 6 }}>
+            <Text style={[styles.subtitle, { color: colors.text, fontWeight: '800' }]}>
+              {language === 'te' ? 'QR మార్కెటింగ్ ట్రాకింగ్' : 'QR Link Marketing & Join Tracking'}
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Links Shared: {groupTrackingLinks.length} · Joined: {totalTrackedJoined} · Shared Name & Phone: {totalWithProfile}/{totalTrackedJoined}
+            </Text>
+            {groupTrackingLinks.slice(0, 4).map((link) => (
+              <View key={link.trackingId} style={{ backgroundColor: colors.background, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.border, gap: 4 }}>
+                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>
+                  [{link.channel.toUpperCase()}] {link.trackingId} · {link.joinedMembers.length} joined
+                </Text>
+                {link.joinedMembers.map((jm) => (
+                  <View key={`${link.trackingId}-${jm.userId}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1 }}>
+                      • {jm.sharedName ? jm.name : 'Pending Name'} · {jm.sharedPhone ? jm.phone : 'No Phone'} ({jm.pointsAwarded} pts)
+                    </Text>
+                    {(!jm.sharedName || !jm.sharedPhone) && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          void sendProfileCompletionReminderNotification(group.name);
+                          setInviteStatus(`Reminder sent to ${jm.name} to complete Name & Phone.`);
+                        }}
+                      >
+                        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>Remind</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ))}
+            <Text style={[styles.subtitle, { color: colors.textDim, fontSize: 11 }]}>
+              Note: Sannidhanams with 0 members are automatically removed after 30 days.
+            </Text>
+          </View>
         </View>
 
         {/* Public Sannidhanam Location */}
@@ -471,7 +702,7 @@ export default function GroupsScreen() {
               placeholderTextColor={colors.textDim}
               style={[styles.memberInput, { color: colors.text }]}
             />
-            <TouchableOpacity onPress={() => { if (noteInput.trim()) { addMessage(group.id, noteInput.trim()); setNoteInput(''); } }}>
+            <TouchableOpacity onPress={handlePostMessage}>
               <Ionicons name="send" color={colors.primary} size={21} />
             </TouchableOpacity>
           </View>

@@ -34,6 +34,7 @@ export interface PilgrimageGroup {
   season: string;
   route?: string;
   location?: SannidhanamLocation;
+  createdAt?: string;
   members: GroupMember[];
   announcements: { id: string; text: string; createdAt: string }[];
   messages: { id: string; author: string; text: string; createdAt: string }[];
@@ -44,9 +45,41 @@ export interface PilgrimageGroup {
 export interface UserProfile {
   id: string;
   name: string;
+  phone?: string;
   language: 'en' | 'te' | 'ml';
   pilgrimageCount: number;
   onboardingComplete: boolean;
+}
+
+export interface QrJoinedMemberTrack {
+  userId: string;
+  name: string;
+  phone?: string;
+  sharedName: boolean;
+  sharedPhone: boolean;
+  pointsAwarded: number;
+  joinedAt: string;
+}
+
+export interface QrShareLinkRecord {
+  trackingId: string;
+  sannidhanamId: string;
+  sannidhanamName: string;
+  referrerId: string;
+  channel: 'qr' | 'whatsapp' | 'telegram' | 'instagram' | 'copy';
+  url: string;
+  createdAt: string;
+  joinedMembers: QrJoinedMemberTrack[];
+}
+
+export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function isProfileComplete(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  const cleanName = profile.name?.trim() ?? '';
+  const digits = (profile.phone ?? '').replace(/\D/g, '');
+  const isGenericName = cleanName === '' || cleanName.toLowerCase() === 'swami' || cleanName.toLowerCase() === 'member swami';
+  return !isGenericName && digits.length >= 10;
 }
 
 export interface UserActionLog {
@@ -82,6 +115,8 @@ interface AppState {
   referrerId: string | null;
   joinedDate: string | null;
   userActionLogs: UserActionLog[];
+  qrTrackingLinks: QrShareLinkRecord[];
+  pendingProfilePointsClaim: boolean;
 
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   toggleNotifications: () => void;
@@ -89,6 +124,15 @@ interface AppState {
   toggleHighContrast: () => void;
   toggleReduceMotion: () => void;
   logUserAction: (action: string, eventTags: string[], extra?: { sannidhanamId?: string; referrerId?: string; joinedDate?: string }) => void;
+  createQrTrackingLink: (params: {
+    sannidhanamId: string;
+    sannidhanamName: string;
+    season: string;
+    referrerId: string;
+    channel: QrShareLinkRecord['channel'];
+    eventTag?: string;
+    urlBuilder: (trackingId: string) => string;
+  }) => QrShareLinkRecord;
   joinSannidhanamByQr: (params: {
     sannidhanamId: string;
     sannidhanamName: string;
@@ -96,9 +140,17 @@ interface AppState {
     referrerId: string;
     eventTag: string;
     memberName: string;
+    phone?: string;
+    trackingId?: string;
     pilgrimageCount?: number;
     awardPoints?: boolean;
   }) => void;
+  completeProfileForPoints: (params: {
+    name: string;
+    phone: string;
+    pilgrimageCount?: number;
+  }) => { awardedPoints: number };
+  pruneEmptySannidhanams: (nowMs?: number) => number;
   setGroupPublicLocation: (groupId: string, location: SannidhanamLocation) => void;
   setAuth: (token: string, profile: UserProfile) => void;
   hydrateFromBackend: () => Promise<boolean>;
@@ -177,6 +229,8 @@ export const useAppStore = create<AppState>()(
       referrerId: null,
       joinedDate: null,
       userActionLogs: [],
+      qrTrackingLinks: [],
+      pendingProfilePointsClaim: false,
       lastDailyCheckinDate: null,
 
       setTheme: (theme) => set({ theme }),
@@ -447,6 +501,7 @@ export const useAppStore = create<AppState>()(
           id: generateId(),
           name,
           season,
+          createdAt: new Date().toISOString(),
           members: profile
             ? [{ userId: profile.id, name: profile.name, role: 'GROUP_ADMIN' }]
             : [],
@@ -472,6 +527,24 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
+      createQrTrackingLink: ({ sannidhanamId, sannidhanamName, referrerId, channel, urlBuilder }) => {
+        const trackingId = `trk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        const record: QrShareLinkRecord = {
+          trackingId,
+          sannidhanamId,
+          sannidhanamName,
+          referrerId,
+          channel,
+          url: urlBuilder(trackingId),
+          createdAt: new Date().toISOString(),
+          joinedMembers: [],
+        };
+        set((s) => ({
+          qrTrackingLinks: [record, ...s.qrTrackingLinks].slice(0, 100),
+        }));
+        return record;
+      },
+
       joinSannidhanamByQr: ({
         sannidhanamId,
         sannidhanamName,
@@ -479,18 +552,32 @@ export const useAppStore = create<AppState>()(
         referrerId,
         eventTag,
         memberName,
+        phone,
+        trackingId,
         pilgrimageCount = 1,
         awardPoints = false,
       }) => {
         const nowIso = new Date().toISOString();
         const currentProfile = get().profile;
-        const activeProfile: UserProfile = currentProfile ?? {
-          id: generateId(),
-          name: memberName.trim() || 'Swami',
-          language: 'en',
-          pilgrimageCount: Math.max(1, pilgrimageCount),
-          onboardingComplete: true,
-        };
+        const cleanName = memberName.trim() || currentProfile?.name || 'Swami';
+        const cleanPhone = (phone ?? currentProfile?.phone ?? '').trim();
+        const activeProfile: UserProfile = currentProfile
+          ? {
+              ...currentProfile,
+              name: cleanName !== 'Swami' && cleanName !== 'Member Swami' ? cleanName : currentProfile.name,
+              ...(cleanPhone ? { phone: cleanPhone } : {}),
+            }
+          : {
+              id: generateId(),
+              name: cleanName,
+              ...(cleanPhone ? { phone: cleanPhone } : {}),
+              language: 'en',
+              pilgrimageCount: Math.max(1, pilgrimageCount),
+              onboardingComplete: true,
+            };
+
+        const profileReady = isProfileComplete(activeProfile);
+        const pointsToAward = awardPoints && profileReady ? 50 : 0;
 
         const existingGroups = get().groups;
         const existingIndex = existingGroups.findIndex((g) => g.id === sannidhanamId);
@@ -516,6 +603,7 @@ export const useAppStore = create<AppState>()(
             id: sannidhanamId,
             name: sannidhanamName,
             season,
+            createdAt: nowIso,
             members: [
               { userId: activeProfile.id, name: activeProfile.name, role: 'MEMBER' },
             ],
@@ -533,13 +621,49 @@ export const useAppStore = create<AppState>()(
           updatedGroups = [newGroup, ...existingGroups];
         }
 
+        const resolvedTrackingId = trackingId?.trim() || `qr_${sannidhanamId}`;
+        const existingLinks = get().qrTrackingLinks;
+        const linkIdx = existingLinks.findIndex((l) => l.trackingId === resolvedTrackingId);
+        const joinedEntry: QrJoinedMemberTrack = {
+          userId: activeProfile.id,
+          name: activeProfile.name,
+          ...(activeProfile.phone ? { phone: activeProfile.phone } : {}),
+          sharedName: activeProfile.name.toLowerCase() !== 'swami' && activeProfile.name.toLowerCase() !== 'member swami',
+          sharedPhone: (activeProfile.phone ?? '').replace(/\D/g, '').length >= 10,
+          pointsAwarded: pointsToAward,
+          joinedAt: nowIso,
+        };
+
+        let updatedLinks: QrShareLinkRecord[];
+        if (linkIdx >= 0) {
+          updatedLinks = existingLinks.map((l, idx) => {
+            if (idx !== linkIdx) return l;
+            const filtered = l.joinedMembers.filter((jm) => jm.userId !== activeProfile.id);
+            return { ...l, joinedMembers: [joinedEntry, ...filtered] };
+          });
+        } else {
+          updatedLinks = [
+            {
+              trackingId: resolvedTrackingId,
+              sannidhanamId,
+              sannidhanamName,
+              referrerId,
+              channel: 'qr' as const,
+              url: `https://deeksha-sigma.vercel.app/invite?s=${encodeURIComponent(sannidhanamId)}&tid=${encodeURIComponent(resolvedTrackingId)}`,
+              createdAt: nowIso,
+              joinedMembers: [joinedEntry],
+            },
+            ...existingLinks,
+          ].slice(0, 100);
+        }
+
         const logEntry: UserActionLog = {
           id: generateId(),
           action: 'joined_sannidhanam_qr',
           sannidhanamId,
           referrerId,
           joinedDate: nowIso,
-          eventTags: Array.from(new Set([eventTag, 'qr_invite', 'sannidhanam_join', 'no_pii_join'])),
+          eventTags: Array.from(new Set([eventTag, 'qr_invite', 'sannidhanam_join', profileReady ? 'profile_complete' : 'profile_pending'])),
           createdAt: nowIso,
         };
 
@@ -549,9 +673,90 @@ export const useAppStore = create<AppState>()(
           joinedSannidhanamId: sannidhanamId,
           referrerId,
           joinedDate: nowIso,
-          totalPoints: awardPoints ? s.totalPoints + 50 : s.totalPoints,
+          totalPoints: s.totalPoints + pointsToAward,
+          pendingProfilePointsClaim: !profileReady,
+          qrTrackingLinks: updatedLinks,
           userActionLogs: [logEntry, ...s.userActionLogs].slice(0, 100),
         }));
+      },
+
+      completeProfileForPoints: ({ name, phone, pilgrimageCount }) => {
+        const cleanName = name.trim();
+        const cleanPhone = phone.trim();
+        const digits = cleanPhone.replace(/\D/g, '');
+        if (!cleanName || digits.length < 10) {
+          return { awardedPoints: 0 };
+        }
+
+        const state = get();
+        const currentProfile = state.profile;
+        const updatedProfile: UserProfile = currentProfile
+          ? {
+              ...currentProfile,
+              name: cleanName,
+              phone: cleanPhone,
+              pilgrimageCount: pilgrimageCount ? Math.max(1, pilgrimageCount) : currentProfile.pilgrimageCount,
+              onboardingComplete: true,
+            }
+          : {
+              id: generateId(),
+              name: cleanName,
+              phone: cleanPhone,
+              language: 'en',
+              pilgrimageCount: Math.max(1, pilgrimageCount ?? 1),
+              onboardingComplete: true,
+            };
+
+        const shouldAward = state.pendingProfilePointsClaim || !isProfileComplete(currentProfile);
+        const awardedPoints = shouldAward ? 50 : 0;
+
+        const updatedGroups = state.groups.map((g) => ({
+          ...g,
+          members: g.members.map((m) =>
+            m.userId === updatedProfile.id ? { ...m, name: cleanName } : m
+          ),
+        }));
+
+        const updatedLinks = state.qrTrackingLinks.map((link) => ({
+          ...link,
+          joinedMembers: link.joinedMembers.map((jm) =>
+            jm.userId === updatedProfile.id
+              ? {
+                  ...jm,
+                  name: cleanName,
+                  phone: cleanPhone,
+                  sharedName: true,
+                  sharedPhone: true,
+                  pointsAwarded: Math.max(jm.pointsAwarded, awardedPoints),
+                }
+              : jm
+          ),
+        }));
+
+        set({
+          profile: updatedProfile,
+          groups: updatedGroups,
+          qrTrackingLinks: updatedLinks,
+          totalPoints: state.totalPoints + awardedPoints,
+          pendingProfilePointsClaim: false,
+        });
+
+        return { awardedPoints };
+      },
+
+      pruneEmptySannidhanams: (nowMs = Date.now()) => {
+        const { groups } = get();
+        const kept = groups.filter((g) => {
+          if (g.members.length > 0) return true;
+          if (!g.createdAt) return true;
+          const ageMs = nowMs - Date.parse(g.createdAt);
+          return Number.isNaN(ageMs) || ageMs < THIRTY_DAYS_MS;
+        });
+        const removedCount = groups.length - kept.length;
+        if (removedCount > 0) {
+          set({ groups: kept });
+        }
+        return removedCount;
       },
 
       setGroupPublicLocation: (groupId, location) => {
@@ -572,7 +777,7 @@ export const useAppStore = create<AppState>()(
       setPersonalBudget: (amount) => set({ personalBudget: amount }),
       addGroupMember: (groupId, name) => {
         const profile = get().profile;
-        if (!profile || !name.trim()) return;
+        if (!isProfileComplete(profile) || !name.trim()) return;
         set({
           groups: get().groups.map((g) =>
             g.id === groupId
@@ -587,7 +792,7 @@ export const useAppStore = create<AppState>()(
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, members: g.members.filter((m) => m.userId !== userId), guruApprovalCount: Math.min(g.guruApprovalCount, Math.max(0, g.members.length - 2)) } : g) }),
       addGroupMessage: (groupId, text) => {
         const profile = get().profile;
-        if (!profile || !text.trim()) return;
+        if (!isProfileComplete(profile) || !profile || !text.trim()) return;
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, messages: [...(g.messages ?? []), { id: generateId(), author: profile.name, text: text.trim(), createdAt: new Date().toISOString() }] } : g) });
       },
       nominateGroupGuru: (groupId, name) =>
@@ -631,6 +836,9 @@ export const useAppStore = create<AppState>()(
     {
       name: 'deeksha-journey-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.pruneEmptySannidhanams();
+      },
     }
   )
 );

@@ -4,13 +4,14 @@ export interface SannidhanamInviteData {
   season: string;
   referrerId: string;
   eventTag: string;
+  trackingId?: string;
 }
 
 const BASE_INVITE_URL = 'https://deeksha-sigma.vercel.app/invite';
 
 /**
  * Build a privacy-safe, zero-PII invite URL for QR codes and social sharing.
- * Contains only opaque IDs, group name, season, and event tracking tag (never email/phone).
+ * Contains only opaque IDs, group name, season, trackingId, and event tracking tag (never email/phone).
  */
 export function buildSannidhanamInviteUrl(data: {
   sannidhanamId: string;
@@ -18,6 +19,7 @@ export function buildSannidhanamInviteUrl(data: {
   season: string;
   referrerId: string;
   eventTag?: string;
+  trackingId?: string;
 }): string {
   const params = new URLSearchParams({
     s: data.sannidhanamId.trim(),
@@ -26,6 +28,9 @@ export function buildSannidhanamInviteUrl(data: {
     r: data.referrerId.trim().slice(0, 40),
     tag: (data.eventTag ?? 'qr_sannidhanam_invite').trim().slice(0, 40),
   });
+  if (data.trackingId?.trim()) {
+    params.set('tid', data.trackingId.trim().slice(0, 40));
+  }
   return `${BASE_INVITE_URL}?${params.toString()}`;
 }
 
@@ -46,12 +51,15 @@ export function parseSannidhanamInvitePayload(rawInput: string): SannidhanamInvi
     const sannidhanamId = params.get('s')?.trim();
     if (!sannidhanamId) return null;
 
+    const trackingId = params.get('tid')?.trim();
+
     return {
       sannidhanamId,
       sannidhanamName: params.get('n')?.trim() || 'Sri Ayyappa Sannidhanam',
       season: params.get('se')?.trim() || 'Mandala-Makaravilakku',
       referrerId: params.get('r')?.trim() || 'guru-swami',
       eventTag: params.get('tag')?.trim() || 'qr_sannidhanam_invite',
+      ...(trackingId ? { trackingId } : {}),
     };
   } catch {
     return null;

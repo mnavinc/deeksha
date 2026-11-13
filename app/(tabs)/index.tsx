@@ -1,10 +1,11 @@
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
 import { useState, useCallback } from 'react';
 import { router } from 'expo-router';
-import { useAppStore } from '@/store/useAppStore';
+import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { getDeekshaType } from '@/data/deekshaTypes';
 import { getCurrentDay, getDaysRemaining, getDayProgress } from '@/engines/deekshaEngine';
 import { calculateDayPoints } from '@/engines/gamificationEngine';
+import { calculateSunTimes, getTimelyDeekshaAlert } from '@/utils/solarTimes';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { ProgressBar } from '@/components/ProgressBar';
 import { DailyChecklist } from '@/components/DailyChecklist';
@@ -83,6 +84,9 @@ export default function HomeScreen() {
   const groupTotal = groupExpenses.reduce((s, e) => s + e.amount, 0);
 
   const isCheckedIn = alreadyCheckedIn || checkinDone;
+  const sunTimes = calculateSunTimes();
+  const needsProfileCompletion = !isProfileComplete(profile);
+  const timelyAlert = getTimelyDeekshaAlert(new Date(), sunTimes, needsProfileCompletion, profile.language);
 
   return (
     <View style={[styles.page, { backgroundColor: colors.background }]}>
@@ -94,6 +98,31 @@ export default function HomeScreen() {
         <Text style={[styles.saranam, { color: colors.primary, fontSize: Math.round(13 * fontScale) }]}>
           {deeksha.rules.commonSaranam ?? 'Swamiye Saranam Ayyappa'}
         </Text>
+
+        {/* Compact Sunrise, Sunset & Timely Alert Strip */}
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/groups')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Today's Sunrise, Sunset and Timely Alert"
+          style={[
+            {
+              backgroundColor: colors.surface,
+              borderColor: timelyAlert.urgency === 'warning' ? colors.primary : colors.border,
+              borderWidth: 1,
+              borderRadius: 14,
+              padding: spacing.sm,
+              marginBottom: spacing.xs,
+            },
+          ]}
+        >
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '800' }}>
+            🌅 {sunTimes.sunrise} · 🌇 {sunTimes.sunset} — {timelyAlert.title}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
+            {timelyAlert.body}
+          </Text>
+        </TouchableOpacity>
 
         <View style={[styles.widgetGrid, isWide && styles.widgetGridWide]}>
           {/* Left Column (or Top on Mobile): Check-in, Avatar, Progress, Streak */}

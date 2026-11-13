@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppStore } from '@/store/useAppStore';
+import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { SacredIcon } from '@/components/SacredIcons';
 import { useI18n } from '@/i18n';
+import { sendProfileCompletionReminderNotification } from '@/utils/notifications';
 
 const DEFAULT_APK_URL =
   process.env.EXPO_PUBLIC_APK_URL ??
@@ -19,6 +20,7 @@ export default function InviteScreen() {
     se?: string;
     r?: string;
     tag?: string;
+    tid?: string;
   }>();
 
   const colors = useThemeColors();
@@ -26,66 +28,119 @@ export default function InviteScreen() {
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
   const profile = useAppStore((s) => s.profile);
-  const groups = useAppStore((s) => s.groups);
   const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
+  const completeProfileForPoints = useAppStore((s) => s.completeProfileForPoints);
 
   const sannidhanamId = params.s || 'sannidhanam-demo';
   const sannidhanamName = params.n || 'Sri Ayyappa Sannidhanam';
   const season = params.se || 'Mandala-Makaravilakku';
   const referrerId = params.r || 'guru-swami';
   const eventTag = params.tag || 'qr_sannidhanam_invite';
+  const trackingId = params.tid;
 
-  const [swamiName, setSwamiName] = useState(profile?.name ?? '');
-  const [earnPointsProfile, setEarnPointsProfile] = useState(true);
+  const [swamiName, setSwamiName] = useState(
+    profile?.name && profile.name !== 'Swami' ? profile.name : ''
+  );
+  const [phone, setPhone] = useState(profile?.phone ?? '');
   const [pilgrimageCount, setPilgrimageCount] = useState('1');
+  const [profileError, setProfileError] = useState('');
   const [joined, setJoined] = useState(false);
+  const [pointsClaimed, setPointsClaimed] = useState(false);
   const [apkTriggered, setApkTriggered] = useState(false);
+  const autoJoinedRef = useRef(false);
 
   const isTe = language === 'te';
   const isWeb = Platform.OS === 'web';
   const isAndroidWeb =
     isWeb && typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
-  const deepLinkUrl = `deekshajourney://invite?s=${encodeURIComponent(sannidhanamId)}&n=${encodeURIComponent(sannidhanamName)}&se=${encodeURIComponent(season)}&r=${encodeURIComponent(referrerId)}&tag=${encodeURIComponent(eventTag)}`;
+  const deepLinkUrl = `deekshajourney://invite?s=${encodeURIComponent(sannidhanamId)}&n=${encodeURIComponent(sannidhanamName)}&se=${encodeURIComponent(season)}&r=${encodeURIComponent(referrerId)}&tag=${encodeURIComponent(eventTag)}${trackingId ? `&tid=${encodeURIComponent(trackingId)}` : ''}`;
 
-  // Auto-join immediately when opened inside an already-configured app
+  // Join the Sannidhanam immediately on QR scan, then prompt for profile (Name + Phone) for points
   useEffect(() => {
-    if (!params.s || !profile?.name || joined) return;
-    const alreadyInGroup = groups.some((g) => g.id === sannidhanamId);
+    if (!params.s || autoJoinedRef.current) return;
+    autoJoinedRef.current = true;
+    const alreadyComplete = isProfileComplete(profile);
     joinSannidhanamByQr({
       sannidhanamId,
       sannidhanamName,
       season,
       referrerId,
       eventTag,
-      memberName: profile.name,
+      trackingId,
+      memberName: profile?.name ?? 'Swami',
+      phone: profile?.phone,
+      awardPoints: alreadyComplete,
     });
-    if (!alreadyInGroup || Platform.OS !== 'web') {
+    setJoined(true);
+    if (alreadyComplete && Platform.OS !== 'web') {
       const timer = setTimeout(() => {
-        setJoined(true);
         router.replace('/(tabs)/groups');
       }, 450);
       return () => clearTimeout(timer);
     }
-  }, [params.s, profile?.name, joined, groups, sannidhanamId, sannidhanamName, season, referrerId, eventTag, joinSannidhanamByQr]);
+    if (!alreadyComplete) {
+      void sendProfileCompletionReminderNotification(sannidhanamName);
+    }
+  }, [params.s, profile, sannidhanamId, sannidhanamName, season, referrerId, eventTag, trackingId, joinSannidhanamByQr]);
 
-  const handleJoin = () => {
-    const cleanName = swamiName.trim() || 'Member Swami';
+  const handleCompleteProfile = () => {
+    setProfileError('');
+    const cleanName = swamiName.trim();
+    const digits = phone.replace(/\D/g, '');
+    if (cleanName.length < 2) {
+      setProfileError(isTe ? 'పాయింట్ల కోసం మీ స్వామి పేరు తప్పనిసరి.' : 'Swami Name is required to earn +50 points.');
+      return;
+    }
+    if (digits.length < 10) {
+      setProfileError(isTe ? 'పాయింట్ల కోసం కనీసం 10 అంకెల ఫోన్ నంబర్ తప్పనిసరి.' : 'Valid 10-digit Phone Number is required to earn +50 points.');
+      return;
+    }
+
     const parsedCount = Math.max(1, parseInt(pilgrimageCount, 10) || 1);
-    joinSannidhanamByQr({
-      sannidhanamId,
-      sannidhanamName,
-      season,
-      referrerId,
-      eventTag,
-      memberName: cleanName,
-      pilgrimageCount: parsedCount,
-      awardPoints: earnPointsProfile,
-    });
-    setJoined(true);
+    if (!joined) {
+      joinSannidhanamByQr({
+        sannidhanamId,
+        sannidhanamName,
+        season,
+        referrerId,
+        eventTag,
+        trackingId,
+        memberName: cleanName,
+        phone: phone.trim(),
+        pilgrimageCount: parsedCount,
+        awardPoints: true,
+      });
+      setJoined(true);
+    } else {
+      completeProfileForPoints({
+        name: cleanName,
+        phone: phone.trim(),
+        pilgrimageCount: parsedCount,
+      });
+    }
+    setPointsClaimed(true);
     setTimeout(() => {
       router.replace('/(tabs)/groups');
     }, 600);
+  };
+
+  const handleJoinUpdatesOnly = () => {
+    if (!joined) {
+      joinSannidhanamByQr({
+        sannidhanamId,
+        sannidhanamName,
+        season,
+        referrerId,
+        eventTag,
+        trackingId,
+        memberName: swamiName.trim() || 'Swami',
+        awardPoints: false,
+      });
+      setJoined(true);
+    }
+    void sendProfileCompletionReminderNotification(sannidhanamName);
+    router.replace('/(tabs)/groups');
   };
 
   const startApkDownload = async () => {
@@ -209,31 +264,25 @@ export default function InviteScreen() {
           </View>
         )}
 
-        <View style={styles.toggleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.inputLabel, { color: colors.text, marginTop: 0 }]}>
-              {isTe ? 'పాయింట్ల కోసం ప్రొఫైల్ పూర్తి చేయండి (+50 pts)' : 'Complete Profile for +50 Points'}
+        {joined && (
+          <View style={[styles.apkBox, { backgroundColor: `${colors.success}18`, borderColor: colors.success }]}>
+            <Text style={[styles.apkTitle, { color: colors.success }]}>
+              {isTe ? '✓ సన్నిధానంలో చేరారు!' : '✓ Joined Sannidhanam Immediately!'}
             </Text>
-            <Text style={[styles.sub, { color: colors.textMuted, textAlign: 'left', fontSize: 11 }]}>
+            <Text style={[styles.apkSub, { color: colors.textMuted }]}>
               {isTe
-                ? 'ఆఫ్ చేస్తే అప్‌డేట్ల కోసం సాధారణ సభ్యుడిగా చేరుతారు'
-                : 'Turn off to join simply as a member for Sannidhanam updates'}
+                ? '+50 పాయింట్లు & సభ్యుల జోడింపు/పోస్టింగ్ కోసం క్రింద మీ పేరు & ఫోన్ నంబర్ పూర్తి చేయండి.'
+                : 'Complete your Name & Phone below to claim +50 points and unlock adding members & posting.'}
             </Text>
           </View>
-          <Switch
-            value={earnPointsProfile}
-            onValueChange={setEarnPointsProfile}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
-          />
-        </View>
+        )}
 
         <Text style={[styles.inputLabel, { color: colors.text }]}>
-          {isTe ? 'మీ స్వామి పేరు (Swami Name)' : 'Your Swami Name'}
+          {isTe ? 'మీ స్వామి పేరు * (పాయింట్ల కోసం తప్పనిసరి)' : 'Your Swami Name * (Mandatory for Points)'}
         </Text>
         <TextInput
           value={swamiName}
-          onChangeText={setSwamiName}
+          onChangeText={(txt) => { setSwamiName(txt); setProfileError(''); }}
           placeholder={isTe ? 'ఉదా. రమేష్ స్వామి' : 'e.g. Ramesh Swamy'}
           placeholderTextColor={colors.textDim}
           style={[
@@ -242,43 +291,58 @@ export default function InviteScreen() {
           ]}
         />
 
-        {earnPointsProfile && (
-          <>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              {isTe ? 'మాల ధారణ సంఖ్య (Yatra Count)' : 'Pilgrimage Count (e.g. 1 for Kanni)'}
-            </Text>
-            <TextInput
-              value={pilgrimageCount}
-              onChangeText={setPilgrimageCount}
-              keyboardType="numeric"
-              placeholder="1"
-              placeholderTextColor={colors.textDim}
-              style={[
-                styles.input,
-                { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
-              ]}
-            />
-          </>
-        )}
+        <Text style={[styles.inputLabel, { color: colors.text }]}>
+          {isTe ? 'ఫోన్ నంబర్ * (పాయింట్ల కోసం తప్పనిసరి)' : 'Phone Number * (Mandatory for Points)'}
+        </Text>
+        <TextInput
+          value={phone}
+          onChangeText={(txt) => { setPhone(txt); setProfileError(''); }}
+          keyboardType="phone-pad"
+          placeholder={isTe ? '10 అంకెల మొబైల్ నంబర్' : '10-digit mobile number'}
+          placeholderTextColor={colors.textDim}
+          style={[
+            styles.input,
+            { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+          ]}
+        />
+
+        <Text style={[styles.inputLabel, { color: colors.text }]}>
+          {isTe ? 'మాల ధారణ సంఖ్య (Yatra Count)' : 'Pilgrimage Count (e.g. 1 for Kanni)'}
+        </Text>
+        <TextInput
+          value={pilgrimageCount}
+          onChangeText={setPilgrimageCount}
+          keyboardType="numeric"
+          placeholder="1"
+          placeholderTextColor={colors.textDim}
+          style={[
+            styles.input,
+            { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+          ]}
+        />
+
+        {profileError ? (
+          <Text style={[styles.apkNote, { color: '#F87171', alignSelf: 'flex-start' }]}>⚠️ {profileError}</Text>
+        ) : null}
 
         <TouchableOpacity
           style={[styles.joinBtn, { backgroundColor: colors.primary }]}
-          onPress={handleJoin}
-          disabled={joined}
+          onPress={handleCompleteProfile}
+          disabled={pointsClaimed}
           accessibilityRole="button"
-          accessibilityLabel="Join Sannidhanam without phone or email"
+          accessibilityLabel="Complete profile to earn 50 points"
         >
-          <Ionicons name={joined ? 'checkmark-circle' : 'qr-code'} size={18} color="#0D1117" />
+          <Ionicons name={pointsClaimed ? 'checkmark-circle' : 'trophy'} size={18} color="#0D1117" />
           <Text style={styles.joinBtnText}>
-            {joined
-              ? isTe ? 'చేరారు! సన్నిధానంకు వెళ్తోంది...' : 'Joined! Opening Sannidhanam...'
-              : isTe ? 'సన్నిధానంలో చేరండి' : 'Join Sannidhanam'}
+            {pointsClaimed
+              ? isTe ? 'ప్రొఫైల్ పూర్తయింది (+50 pts)!' : 'Profile Saved (+50 pts)! Opening...'
+              : isTe ? 'ప్రొఫైల్ పూర్తి చేసి +50 పాయింట్లు పొందండి' : 'Save Profile & Claim +50 Points'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.skipBtn}>
+        <TouchableOpacity onPress={handleJoinUpdatesOnly} style={styles.skipBtn}>
           <Text style={[styles.skipText, { color: colors.textMuted }]}>
-            {isTe ? 'హోమ్‌కు వెళ్ళండి' : 'Go to Home'}
+            {isTe ? 'తర్వాత పూర్తి చేస్తాను (సన్నిధానం అప్‌డేట్స్ మాత్రమే)' : 'Continue for Updates Only (Complete Profile Later)'}
           </Text>
         </TouchableOpacity>
       </View>

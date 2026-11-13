@@ -1,6 +1,8 @@
 /**
- * notifications.ts — Web & Mobile Notifications for Daily 7:00 PM Check-in & Group Updates.
+ * notifications.ts — Web & Mobile Notifications for Daily 7:00 PM Check-in,
+ * Sunrise/Sunset Sandhya Alerts, Profile Completion Reminders, & Group Updates.
  */
+import { calculateSunTimes } from './solarTimes';
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -25,10 +27,11 @@ export async function scheduleDaily7pmCheckinReminder(): Promise<void> {
     target.setHours(19, 0, 0, 0);
     if (now > target) target.setDate(target.getDate() + 1);
 
+    const sun = calculateSunTimes();
     const msUntil7pm = target.getTime() - now.getTime();
     setTimeout(() => {
       new Notification('☀️ 7:00 PM Deeksha Check-in • నేటి దీక్ష చెక్-ఇన్ సమయం!', {
-        body: 'Swami, complete today\'s Niyamas and earn your discipline points with 1-tap check-in! 🙏',
+        body: `Swami, complete today's Niyamas! Today: Sunrise ${sun.sunrise} · Sunset ${sun.sunset} 🙏`,
       });
     }, Math.min(msUntil7pm, 2147483647));
   }
@@ -52,6 +55,32 @@ export async function sendGroupExpenseNotification(groupName: string, amount: nu
 export async function sendGroupMessageNotification(groupName: string, author: string, message: string): Promise<void> {
   const title = `📢 ${groupName} — Announcement`;
   const body = `${author}: "${message}"`;
+
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body });
+  }
+}
+
+/**
+ * Remind a QR-joined member who has not yet shared their Name & Phone to complete profile for points
+ */
+export async function sendProfileCompletionReminderNotification(sannidhanamName?: string): Promise<void> {
+  const sun = calculateSunTimes();
+  const title = '🙏 Complete Profile to Claim +50 Points';
+  const body = `${sannidhanamName ? `Joined ${sannidhanamName}! ` : ''}Add your Name & Phone to earn +50 points & unlock posting. Sunrise ${sun.sunrise} · Sunset ${sun.sunset}`;
+
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body });
+  }
+}
+
+/**
+ * Send a timely Sandhya alert with today's Sunrise and Sunset times
+ */
+export async function sendTimelySolarAlertNotification(): Promise<void> {
+  const sun = calculateSunTimes();
+  const title = `🌅 Sunrise ${sun.sunrise} · 🌇 Sunset ${sun.sunset}`;
+  const body = 'Swamiye Saranam Ayyappa! Align your morning Snanam, evening Deeparadhana & daily check-in with today\'s Sandhya timings.';
 
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body });
