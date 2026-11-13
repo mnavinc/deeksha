@@ -68,4 +68,15 @@ describe('Auth Route Input Validation & Security', () => {
     const body = JSON.parse(response.body);
     assert.equal(body.error, 'VALIDATION_ERROR');
   });
+
+  it('POST /v1/auth/demo rejects non-test email addresses with 400 VALIDATION_ERROR', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/demo',
+      payload: { email: 'random@example.com' },
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).error, 'VALIDATION_ERROR');
+  });
 });

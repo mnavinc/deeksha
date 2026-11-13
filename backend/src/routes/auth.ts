@@ -13,6 +13,8 @@ import { sendOtpEmail } from '../emailService.js';
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
+const TEST_ACCOUNTS = new Set(['test@deeksha.app', 'kanni@deeksha.app']);
+const TEST_OTP = '123456';
 
 function generateOtp(): string {
   return String(randomInt(100000, 999999));
@@ -78,16 +80,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       request.log.info({ identifier, emailSent }, '[Auth] OTP sent');
 
-      const isDevMock = env.NODE_ENV === 'development' && (!env.SMTP_USER || !env.SMTP_PASS);
+      const smtpConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
+      const isDevMock = env.NODE_ENV === 'development' && !smtpConfigured;
       if (isDevMock) {
         request.log.info({ identifier, otp }, '[Auth DEV] Generated OTP (SMTP not configured)');
       }
 
       return reply.status(200).send({
         ok: true,
-        message: emailSent
+        emailDelivery: smtpConfigured ? (emailSent ? 'smtp_sent' : 'smtp_failed') : 'console_fallback',
+        message: smtpConfigured && emailSent
           ? `OTP sent to ${identifier}. Check your inbox (also spam folder).`
-          : `OTP generated. Email delivery pending — check inbox or try again.`,
+          : `OTP generated. Configure SMTP_USER/SMTP_PASS for live email, or use Test Login (test@deeksha.app / 123456).`,
         ...(isDevMock ? { devOtp: otp } : {}),
       });
     }
@@ -110,42 +114,46 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { identifier, otp, name } = verifyOtpSchema.parse(request.body);
 
-      // Find valid unexpired OTP
-      const otpResult = await pool.query(
-        `SELECT id, attempts FROM email_otp_codes
-         WHERE identifier = $1 AND otp_code = $2 AND is_verified = false AND expires_at > now()
-         ORDER BY created_at DESC LIMIT 1`,
-        [identifier, otp]
-      );
+      const isValidTestAccount =
+        env.ENABLE_TEST_LOGIN && TEST_ACCOUNTS.has(identifier) && otp === TEST_OTP;
 
-      if (!otpResult.rows.length) {
-        // Check if there's an OTP but attempts exceeded
-        const expiredResult = await pool.query(
-          `SELECT attempts FROM email_otp_codes WHERE identifier = $1 AND is_verified = false ORDER BY created_at DESC LIMIT 1`,
-          [identifier]
+      if (!isValidTestAccount) {
+        // Find valid unexpired OTP
+        const otpResult = await pool.query(
+          `SELECT id, attempts FROM email_otp_codes
+           WHERE identifier = $1 AND otp_code = $2 AND is_verified = false AND expires_at > now()
+           ORDER BY created_at DESC LIMIT 1`,
+          [identifier, otp]
         );
-        const attempts = expiredResult.rows[0]?.attempts ?? 0;
-        if (attempts >= MAX_ATTEMPTS) {
-          return reply.status(429).send({
-            error: 'TOO_MANY_ATTEMPTS',
-            message: 'Too many failed attempts. Please request a new OTP.',
+
+        if (!otpResult.rows.length) {
+          // Check if there's an OTP but attempts exceeded
+          const expiredResult = await pool.query(
+            `SELECT attempts FROM email_otp_codes WHERE identifier = $1 AND is_verified = false ORDER BY created_at DESC LIMIT 1`,
+            [identifier]
+          );
+          const attempts = expiredResult.rows[0]?.attempts ?? 0;
+          if (attempts >= MAX_ATTEMPTS) {
+            return reply.status(429).send({
+              error: 'TOO_MANY_ATTEMPTS',
+              message: 'Too many failed attempts. Please request a new OTP.',
+            });
+          }
+          // Increment attempts
+          await pool.query(
+            `UPDATE email_otp_codes SET attempts = attempts + 1 WHERE identifier = $1 AND is_verified = false`,
+            [identifier]
+          );
+          return reply.status(400).send({
+            error: 'INVALID_OTP',
+            message: 'Invalid or expired OTP. Please try again.',
           });
         }
-        // Increment attempts
-        await pool.query(
-          `UPDATE email_otp_codes SET attempts = attempts + 1 WHERE identifier = $1 AND is_verified = false`,
-          [identifier]
-        );
-        return reply.status(400).send({
-          error: 'INVALID_OTP',
-          message: 'Invalid or expired OTP. Please try again.',
-        });
+
+        const { id: otpId } = otpResult.rows[0];
+        // Mark OTP as verified
+        await pool.query(`UPDATE email_otp_codes SET is_verified = true WHERE id = $1`, [otpId]);
       }
-
-      const { id: otpId } = otpResult.rows[0];
-
-      // Mark OTP as verified
-      await pool.query(`UPDATE email_otp_codes SET is_verified = true WHERE id = $1`, [otpId]);
 
       // Upsert user
       const displayName = name?.trim() || identifier.split('@')[0];
@@ -223,4 +231,48 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
     }
   );
+
+  /**
+   * POST /v1/auth/demo — Quick Test Login for test@deeksha.app / kanni@deeksha.app
+   */
+  app.post('/v1/auth/demo', async (request, reply) => {
+    if (!env.ENABLE_TEST_LOGIN) {
+      return reply.status(403).send({
+        error: 'FORBIDDEN',
+        message: 'Test login is disabled in this environment.',
+      });
+    }
+
+    const body = z
+      .object({
+        email: z.enum(['test@deeksha.app', 'kanni@deeksha.app']).default('test@deeksha.app'),
+      })
+      .parse(request.body ?? {});
+
+    const defaultName = body.email === 'test@deeksha.app' ? 'Swami Test' : 'Kanni Swami';
+    const userResult = await pool.query(
+      `INSERT INTO users (external_auth_id, email, display_name, language)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO UPDATE SET display_name = COALESCE(users.display_name, EXCLUDED.display_name)
+       RETURNING id, email, display_name AS name, created_at`,
+      [`email:${body.email}`, body.email, defaultName, body.email === 'test@deeksha.app' ? 'te' : 'en']
+    );
+    const user = userResult.rows[0];
+
+    const token = await app.jwt.sign(
+      { sub: user.id, email: user.email, name: user.name },
+      { expiresIn: '30d' }
+    );
+
+    return reply.status(200).send({
+      ok: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.created_at,
+      },
+    });
+  });
 };

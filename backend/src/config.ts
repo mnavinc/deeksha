@@ -52,6 +52,9 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 
+  // Test / Demo Credentials Support
+  ENABLE_TEST_LOGIN: z.coerce.boolean().default(true),
+
   // SMTP Email Settings
   SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().int().default(587),

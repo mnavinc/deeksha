@@ -148,6 +148,51 @@ export default function HomeScreen() {
           </Text>
         </View>
 
+        {/* 🔥 Gamified Lifestyle Streak & Habit Pillars */}
+        <View
+          style={[
+            styles.section,
+            getClayStyle(activeTheme, 'medium'),
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.tasksHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              🔥 {enrollment.dailyLogs.length} Day Streak · Lifestyle Pillars
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/guide' as any)}>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+                Kanni Guide →
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+            {[
+              { label: '🌅 Pooja', done: todayLog.checkpoints.prayer },
+              { label: `📿 ${todayLog.saranamCount}/108`, done: todayLog.saranamCount >= 18 },
+              { label: '🍽️ Sattvic', done: todayLog.checkpoints.vegetarian },
+              { label: '👣 Walk', done: todayLog.checkpoints.walking },
+              { label: '🕯️ Evening', done: todayLog.checkpoints.eveningPrayer },
+            ].map((pill, i) => (
+              <View
+                key={i}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: pill.done ? colors.success : colors.border,
+                  backgroundColor: pill.done ? '#3FB95018' : colors.background,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: pill.done ? colors.success : colors.textMuted }}>
+                  {pill.done ? '✓ ' : ''}{pill.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* Tasks collapsible section */}
         <View style={[styles.tasksSection, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity

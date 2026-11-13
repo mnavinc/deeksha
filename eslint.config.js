@@ -1,6 +1,18 @@
 const expoConfig = require('eslint-config-expo/flat');
 
 module.exports = [
+  {
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      '.expo/**',
+      'backend/**',
+      'android/**',
+      'public/**',
+      'babel.config.js',
+      'eslint.config.js',
+    ],
+  },
   ...expoConfig,
   {
     rules: {
@@ -12,15 +24,5 @@ module.exports = [
       ],
       '@typescript-eslint/array-type': 'off',
     },
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      '.expo/**',
-      'backend/**',
-      'android/**',
-      'public/**',
-      'babel.config.js',
-      'eslint.config.js',
-    ],
   },
 ];

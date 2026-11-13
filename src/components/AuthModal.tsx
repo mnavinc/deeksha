@@ -72,7 +72,12 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
       if (!res.ok) {
         setError(data?.message ?? 'Failed to send OTP. Please try again.');
       } else {
-        setSuccessMsg(data.message ?? `OTP sent to ${identifier}. Check your inbox.`);
+        if (data.devOtp) {
+          setOtp(String(data.devOtp));
+          setSuccessMsg(`Dev OTP: ${data.devOtp} (SMTP not configured)`);
+        } else {
+          setSuccessMsg(data.message ?? `OTP sent to ${identifier}. Check your inbox.`);
+        }
         setStep('otp');
       }
     } catch {
@@ -115,6 +120,45 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
       }
     } catch {
       setError('Network error — is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickTestLogin = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/v1/auth/demo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@deeksha.app' }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.token && data?.user) {
+        setAuth(data.token, {
+          id: data.user.id,
+          name: data.user.name || 'Swami Test',
+          language: 'te',
+          pilgrimageCount: 1,
+          onboardingComplete: false,
+        });
+        await hydrateFromBackend();
+        onSuccess();
+        return;
+      }
+      throw new Error('Demo login fallback');
+    } catch {
+      // Offline-first demo fallback so APK & web always work even without backend/DB
+      setAuth('offline-demo-token', {
+        id: '00000000-0000-4000-8000-000000000001',
+        name: 'Swami Test',
+        language: 'te',
+        pilgrimageCount: 1,
+        onboardingComplete: false,
+      });
+      onSuccess();
     } finally {
       setLoading(false);
     }
@@ -222,6 +266,17 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
                         <Text style={styles.submitText}>{t('sendOtp')}</Text>
                       </>
                     )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.demoBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
+                    onPress={handleQuickTestLogin}
+                    disabled={loading}
+                  >
+                    <Ionicons name="flash-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.demoBtnText, { color: colors.primary }]}>
+                      Quick Test Login (test@deeksha.app)
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -382,5 +437,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  demoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  demoBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
