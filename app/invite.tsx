@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -7,6 +7,10 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { SacredIcon } from '@/components/SacredIcons';
 import { useI18n } from '@/i18n';
+
+const DEFAULT_APK_URL =
+  process.env.EXPO_PUBLIC_APK_URL ??
+  'https://github.com/mnavinc/deeksha/releases/latest/download/app-release.apk';
 
 export default function InviteScreen() {
   const params = useLocalSearchParams<{
@@ -22,6 +26,7 @@ export default function InviteScreen() {
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
   const profile = useAppStore((s) => s.profile);
+  const groups = useAppStore((s) => s.groups);
   const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
 
   const sannidhanamId = params.s || 'sannidhanam-demo';
@@ -32,8 +37,35 @@ export default function InviteScreen() {
 
   const [swamiName, setSwamiName] = useState(profile?.name ?? '');
   const [joined, setJoined] = useState(false);
+  const [apkTriggered, setApkTriggered] = useState(false);
 
   const isTe = language === 'te';
+  const isWeb = Platform.OS === 'web';
+  const isAndroidWeb =
+    isWeb && typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+  const deepLinkUrl = `deekshajourney://invite?s=${encodeURIComponent(sannidhanamId)}&n=${encodeURIComponent(sannidhanamName)}&se=${encodeURIComponent(season)}&r=${encodeURIComponent(referrerId)}&tag=${encodeURIComponent(eventTag)}`;
+
+  // Auto-join immediately when opened inside an already-configured app
+  useEffect(() => {
+    if (!params.s || !profile?.name || joined) return;
+    const alreadyInGroup = groups.some((g) => g.id === sannidhanamId);
+    joinSannidhanamByQr({
+      sannidhanamId,
+      sannidhanamName,
+      season,
+      referrerId,
+      eventTag,
+      memberName: profile.name,
+    });
+    if (!alreadyInGroup || Platform.OS !== 'web') {
+      const timer = setTimeout(() => {
+        setJoined(true);
+        router.replace('/(tabs)/groups');
+      }, 450);
+      return () => clearTimeout(timer);
+    }
+  }, [params.s, profile?.name, joined, groups, sannidhanamId, sannidhanamName, season, referrerId, eventTag, joinSannidhanamByQr]);
 
   const handleJoin = () => {
     const cleanName = swamiName.trim() || 'Kanni Swami';
@@ -49,6 +81,29 @@ export default function InviteScreen() {
     setTimeout(() => {
       router.replace('/(tabs)/groups');
     }, 600);
+  };
+
+  const handleDownloadApkAndJoin = async () => {
+    // Save invite payload locally + copy deep-link handoff so the newly installed app can auto-join
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(deepLinkUrl);
+      } catch {}
+    }
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(
+          'deeksha_pending_qr_invite',
+          JSON.stringify({ sannidhanamId, sannidhanamName, season, referrerId, eventTag })
+        );
+      } catch {}
+    }
+    setApkTriggered(true);
+    Linking.openURL(DEFAULT_APK_URL).catch(() => {});
+  };
+
+  const handleOpenInstalledApp = () => {
+    Linking.openURL(deepLinkUrl).catch(() => {});
   };
 
   return (
@@ -86,6 +141,53 @@ export default function InviteScreen() {
             Event Tag: <Text style={{ color: colors.primary, fontWeight: '700' }}>{eventTag}</Text>
           </Text>
         </View>
+
+        {/* Android Web: Download APK + Deep Link Auto-Join */}
+        {isWeb && (
+          <View style={[styles.apkBox, { backgroundColor: `${colors.primary}14`, borderColor: colors.primary }]}>
+            <Text style={[styles.apkTitle, { color: colors.primary }]}>
+              {isAndroidWeb
+                ? isTe ? '📱 Android యాప్ డౌన్‌లోడ్ & ఆటో-జాయిన్' : '📱 Get the Android App & Auto-Join'
+                : isTe ? '📱 Android APK డౌన్‌లోడ్' : '📱 Android App Available'}
+            </Text>
+            <Text style={[styles.apkSub, { color: colors.textMuted }]}>
+              {isTe
+                ? 'APK ఇన్‌స్టాల్ చేసిన తర్వాత "Open Installed App" నొక్కితే ఈ సన్నిధానంలో ఆటోమేటిక్‌గా చేరుతారు.'
+                : 'Install the APK, then tap "Open Installed App" to auto-join this Sannidhanam with zero signup.'}
+            </Text>
+            <View style={styles.apkBtnRow}>
+              <TouchableOpacity
+                style={[styles.apkBtn, { backgroundColor: colors.primary }]}
+                onPress={handleDownloadApkAndJoin}
+                accessibilityRole="button"
+                accessibilityLabel="Download Android APK"
+              >
+                <Ionicons name="download-outline" size={16} color="#0D1117" />
+                <Text style={styles.apkBtnText}>
+                  {isTe ? 'APK డౌన్‌లోడ్' : 'Download APK'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.apkBtnOutline, { borderColor: colors.primary }]}
+                onPress={handleOpenInstalledApp}
+                accessibilityRole="button"
+                accessibilityLabel="Open Installed App"
+              >
+                <Ionicons name="open-outline" size={16} color={colors.primary} />
+                <Text style={[styles.apkBtnOutlineText, { color: colors.primary }]}>
+                  {isTe ? 'యాప్ తెరవండి' : 'Open App'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {apkTriggered && (
+              <Text style={[styles.apkNote, { color: colors.success }]}>
+                {isTe
+                  ? '✓ APK డౌన్‌లోడ్ ప్రారంభమైంది & ఇన్వైట్ లింక్ కాపీ చేయబడింది!'
+                  : '✓ APK download started & invite link copied for app handoff!'}
+              </Text>
+            )}
+          </View>
+        )}
 
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           {isTe ? 'మీ స్వామి పేరు (Swami Name)' : 'Enter Your Swami Name'}
@@ -164,6 +266,38 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   metaLine: { fontSize: 12 },
+  apkBox: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.sm,
+    gap: 6,
+  },
+  apkTitle: { fontSize: 13, fontWeight: '800' },
+  apkSub: { fontSize: 11, lineHeight: 16 },
+  apkBtnRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
+  apkBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  apkBtnText: { color: '#0D1117', fontSize: 12, fontWeight: '800' },
+  apkBtnOutline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  apkBtnOutlineText: { fontSize: 12, fontWeight: '800' },
+  apkNote: { fontSize: 11, fontWeight: '700', marginTop: 2 },
   inputLabel: { alignSelf: 'flex-start', fontSize: 13, fontWeight: '700', marginTop: 4 },
   input: {
     width: '100%',
@@ -186,4 +320,3 @@ const styles = StyleSheet.create({
   skipBtn: { paddingVertical: 8 },
   skipText: { fontSize: 13, fontWeight: '600' },
 });
-
