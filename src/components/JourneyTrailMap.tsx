@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  StyleSheet, Text, View, Dimensions, TouchableOpacity,
+  StyleSheet, Text, View, useWindowDimensions, TouchableOpacity,
   Modal, ScrollView, Platform,
 } from 'react-native';
 import Svg, {
@@ -13,10 +13,7 @@ import type { JourneyCheckpoint } from '@/data/journeyCheckpoints';
 import { DEEKSHA_MAP_THEME } from '@/data/journeyCheckpoints';
 import { spacing } from '@/theme/colors';
 import { useI18n } from '@/i18n';
-
-const { width: SCREEN_W } = Dimensions.get('window');
-const MAP_W = Math.min(SCREEN_W - 32, 480);
-const MAP_H = MAP_W * 1.6;
+import { SacredIcon, SacredSvgGlyph, getCheckpointIconName } from '@/components/SacredIcons';
 
 /** Build normalized path stops for N checkpoints — winding S-curve bottom to top */
 function buildStops(n: number): Array<{ x: number; y: number }> {
@@ -68,35 +65,67 @@ type Props = {
   onUnlockMilestone?: (id: string) => void;
 };
 
-export function JourneyTrailMap({ checkpoints, currentDay, unlockedIds, deekshaId = 'ayyappa', onUnlockMilestone }: Props) {
+export const JourneyTrailMap = React.memo(function JourneyTrailMap({
+  checkpoints,
+  currentDay,
+  unlockedIds,
+  deekshaId = 'ayyappa',
+  onUnlockMilestone,
+}: Props) {
   const { language } = useI18n();
+  const { width: screenW } = useWindowDimensions();
+  const mapW = Math.max(280, Math.min(screenW - 32, 520));
+  const mapH = Math.round(mapW * 1.62);
+
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<JourneyCheckpoint | null>(null);
 
   const theme = DEEKSHA_MAP_THEME[deekshaId] ?? DEEKSHA_MAP_THEME.ayyappa;
   const stops = useMemo(() => buildStops(checkpoints.length), [checkpoints.length]);
-  const pathD = useMemo(() => buildSvgPath(stops, MAP_W, MAP_H), [stops]);
+  const pathD = useMemo(() => buildSvgPath(stops, mapW, mapH), [stops, mapW, mapH]);
 
-  const unlockedCount = checkpoints.filter(
-    (c) => unlockedIds.includes(c.id) || (c.dayUnlock ?? Infinity) <= currentDay
-  ).length;
+  const unlockedSet = useMemo(() => new Set(unlockedIds), [unlockedIds]);
 
-  const progressStops = stops.slice(0, Math.max(1, unlockedCount));
-  const progressD = progressStops.length > 1 ? buildSvgPath(progressStops, MAP_W, MAP_H) : '';
+  const unlockedCount = useMemo(
+    () =>
+      checkpoints.filter(
+        (c) => unlockedSet.has(c.id) || (c.dayUnlock ?? Infinity) <= currentDay
+      ).length,
+    [checkpoints, unlockedSet, currentDay]
+  );
+
+  const progressStops = useMemo(
+    () => stops.slice(0, Math.max(1, unlockedCount)),
+    [stops, unlockedCount]
+  );
+  const progressD = useMemo(
+    () => (progressStops.length > 1 ? buildSvgPath(progressStops, mapW, mapH) : ''),
+    [progressStops, mapW, mapH]
+  );
 
   const selectedUnlocked = selectedCheckpoint
-    ? unlockedIds.includes(selectedCheckpoint.id) || (selectedCheckpoint.dayUnlock ?? Infinity) <= currentDay
+    ? unlockedSet.has(selectedCheckpoint.id) || (selectedCheckpoint.dayUnlock ?? Infinity) <= currentDay
     : false;
 
   return (
-    <View style={[styles.frame, { width: MAP_W, height: MAP_H }]}>
-      <Svg width={MAP_W} height={MAP_H} viewBox={`0 0 ${MAP_W} ${MAP_H}`}>
+    <View style={[styles.frame, { width: mapW, height: mapH }]}>
+      <Svg width={mapW} height={mapH} viewBox={`0 0 ${mapW} ${mapH}`}>
         <Defs>
           <LinearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={theme.bg1} />
-            <Stop offset="1" stopColor={theme.bg2} />
+            <Stop offset="0.55" stopColor={theme.bg2} />
+            <Stop offset="1" stopColor="#091C14" />
+          </LinearGradient>
+          <LinearGradient id="ridgeGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#2D6A4F" stopOpacity="0.45" />
+            <Stop offset="1" stopColor="#0D2B1E" stopOpacity="0.1" />
+          </LinearGradient>
+          <LinearGradient id="riverGrad" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#48CAE4" stopOpacity="0.35" />
+            <Stop offset="0.5" stopColor="#90E0EF" stopOpacity="0.55" />
+            <Stop offset="1" stopColor="#48CAE4" stopOpacity="0.25" />
           </LinearGradient>
           <RadialGradient id="glowActive" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={theme.activeRoad} stopOpacity="0.9" />
+            <Stop offset="0" stopColor={theme.activeRoad} stopOpacity="0.95" />
             <Stop offset="1" stopColor={theme.activeRoad} stopOpacity="0" />
           </RadialGradient>
           <RadialGradient id="glowFinish" cx="50%" cy="50%" r="50%">
@@ -106,92 +135,124 @@ export function JourneyTrailMap({ checkpoints, currentDay, unlockedIds, deekshaI
         </Defs>
 
         {/* Background */}
-        <Rect width={MAP_W} height={MAP_H} fill="url(#bgGrad)" rx={20} />
+        <Rect width={mapW} height={mapH} fill="url(#bgGrad)" rx={20} />
 
-        {/* Decorative terrain */}
-        <Ellipse cx={MAP_W * 0.2} cy={MAP_H * 0.85} rx={MAP_W * 0.18} ry={MAP_H * 0.04} fill="#40916C" opacity={0.3} />
-        <Ellipse cx={MAP_W * 0.8} cy={MAP_H * 0.55} rx={MAP_W * 0.12} ry={MAP_H * 0.06} fill="#40916C" opacity={0.25} />
-        <Ellipse cx={MAP_W * 0.15} cy={MAP_H * 0.30} rx={MAP_W * 0.08} ry={MAP_H * 0.04} fill="#90E0EF" opacity={0.5} />
-        <Ellipse cx={MAP_W * 0.75} cy={MAP_H * 0.25} rx={MAP_W * 0.06} ry={MAP_H * 0.03} fill="#90E0EF" opacity={0.4} />
+        {/* Subtle Sacred Summit Sunburst / Makara Jyothi Glow */}
+        <Circle cx={mapW * 0.5} cy={mapH * 0.08} r={mapW * 0.34} fill="url(#glowFinish)" opacity={0.18} />
 
-        {/* Full trail road */}
-        <Path d={pathD} fill="none" stroke={theme.roadColor} strokeWidth={24} strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
-        {/* Road dashes */}
-        <Path d={pathD} fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeDasharray="8 14" opacity={0.4} />
+        {/* Layered Western Ghats / Sabarimala Mountain Silhouettes */}
+        <Polygon
+          points={`0,${mapH * 0.28} ${mapW * 0.22},${mapH * 0.14} ${mapW * 0.48},${mapH * 0.24} ${mapW * 0.78},${mapH * 0.11} ${mapW},${mapH * 0.26} ${mapW},${mapH * 0.38} 0,${mapH * 0.38}`}
+          fill="url(#ridgeGrad)"
+        />
+        <Polygon
+          points={`0,${mapH * 0.54} ${mapW * 0.3},${mapH * 0.43} ${mapW * 0.65},${mapH * 0.51} ${mapW},${mapH * 0.41} ${mapW},${mapH * 0.64} 0,${mapH * 0.64}`}
+          fill="#1B4332"
+          opacity={0.35}
+        />
 
-        {/* Progress road (completed sections) */}
+        {/* Pampa River Ribbon */}
+        <Path
+          d={`M -10 ${mapH * 0.36} Q ${mapW * 0.35} ${mapH * 0.31}, ${mapW * 0.6} ${mapH * 0.37} T ${mapW + 10} ${mapH * 0.33}`}
+          fill="none"
+          stroke="url(#riverGrad)"
+          strokeWidth={14}
+          strokeLinecap="round"
+        />
+
+        {/* Forest Canopy Clusters */}
+        <Ellipse cx={mapW * 0.18} cy={mapH * 0.85} rx={mapW * 0.16} ry={mapH * 0.035} fill="#40916C" opacity={0.28} />
+        <Ellipse cx={mapW * 0.82} cy={mapH * 0.68} rx={mapW * 0.14} ry={mapH * 0.04} fill="#40916C" opacity={0.24} />
+        <Ellipse cx={mapW * 0.16} cy={mapH * 0.52} rx={mapW * 0.11} ry={mapH * 0.03} fill="#52B788" opacity={0.2} />
+
+        {/* Trail Outer Shadow */}
+        <Path d={pathD} fill="none" stroke="#000000" strokeWidth={28} strokeLinecap="round" strokeLinejoin="round" opacity={0.28} />
+        {/* Full Trail Base Road */}
+        <Path d={pathD} fill="none" stroke={theme.roadColor} strokeWidth={22} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} />
+        {/* Road Center Dashes */}
+        <Path d={pathD} fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeDasharray="7 12" opacity={0.35} />
+
+        {/* Progress Road (Completed Sections) */}
         {progressD ? (
-          <Path d={progressD} fill="none" stroke={theme.activeRoad} strokeWidth={24} strokeLinecap="round" strokeLinejoin="round" opacity={0.95} />
+          <>
+            <Path d={progressD} fill="none" stroke={theme.activeRoad} strokeWidth={24} strokeLinecap="round" strokeLinejoin="round" opacity={0.35} />
+            <Path d={progressD} fill="none" stroke={theme.activeRoad} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" opacity={0.95} />
+            <Path d={progressD} fill="none" stroke="#FFFBE6" strokeWidth={2} strokeLinecap="round" strokeDasharray="6 10" opacity={0.65} />
+          </>
         ) : null}
 
-        {/* Checkpoint SVG circles */}
+        {/* Finely Rendered SVG Checkpoint Nodes & Vector Icons */}
         {checkpoints.map((cp, index) => {
           const stop = stops[index];
           if (!stop) return null;
-          const px = stop.x * MAP_W;
-          const py = stop.y * MAP_H;
-          const unlocked = unlockedIds.includes(cp.id) || (cp.dayUnlock ?? Infinity) <= currentDay;
+          const px = stop.x * mapW;
+          const py = stop.y * mapH;
+          const unlocked = unlockedSet.has(cp.id) || (cp.dayUnlock ?? Infinity) <= currentDay;
           const isActive = index === Math.max(0, unlockedCount - 1);
           const isFinish = index === checkpoints.length - 1;
           const phaseColor = PHASE_COLORS[cp.phase] ?? PHASE_COLORS.vrutham;
-          const r = isFinish ? 22 : isActive ? 18 : 14;
+          const r = isFinish ? 23 : isActive ? 19 : 15;
+          const iconName = unlocked ? getCheckpointIconName(cp.id) : 'lock';
+          const iconScale = isFinish ? 0.95 : isActive ? 0.8 : 0.65;
+          const glyphOffset = 12 * iconScale;
 
           return (
             <G key={cp.id}>
-              {/* Glow for active / finish */}
+              {/* Outer Halo for Active / Finish */}
               {(isActive || isFinish) && (
                 <Circle
                   cx={px} cy={py} r={r + 14}
                   fill={isFinish ? 'url(#glowFinish)' : 'url(#glowActive)'}
-                  opacity={0.5}
+                  opacity={0.55}
                 />
               )}
-              {/* Shadow */}
-              <Circle cx={px + 2} cy={py + 3} r={r} fill="#000" opacity={0.2} />
-              {/* Main node circle */}
+              {/* Drop Shadow */}
+              <Circle cx={px + 1.5} cy={py + 3} r={r} fill="#000" opacity={0.35} />
+              {/* Outer Ring */}
               <Circle
                 cx={px} cy={py} r={r}
-                fill={unlocked ? phaseColor.fill : '#1E3A2E'}
-                stroke={unlocked ? phaseColor.stroke : '#3A5C48'}
-                strokeWidth={isActive ? 3.5 : 2}
+                fill={unlocked ? '#0F241B' : '#162820'}
+                stroke={unlocked ? phaseColor.fill : '#3A5C48'}
+                strokeWidth={isActive ? 3.5 : 2.2}
               />
-              {/* Star for finish */}
-              {isFinish && unlocked && (
-                <Polygon
-                  points={`${px},${py - 10} ${px + 3},${py - 4} ${px + 10},${py - 4} ${px + 5},${py + 1} ${px + 7},${py + 8} ${px},${py + 4} ${px - 7},${py + 8} ${px - 5},${py + 1} ${px - 10},${py - 4} ${px - 3},${py - 4}`}
-                  fill="#FFD700"
-                  opacity={0.9}
+              {/* Inner Disc */}
+              <Circle
+                cx={px} cy={py} r={r - 3}
+                fill={unlocked ? `${phaseColor.fill}28` : '#0D1B14'}
+              />
+              {/* Crisp Vector Glyph */}
+              <G transform={`translate(${px - glyphOffset}, ${py - glyphOffset}) scale(${iconScale})`}>
+                <SacredSvgGlyph
+                  name={iconName}
+                  color={unlocked ? '#FFFBE6' : '#6E8F7B'}
+                  accent={unlocked ? phaseColor.fill : '#4A6B57'}
                 />
-              )}
+              </G>
             </G>
           );
         })}
       </Svg>
 
-      {/* Interactive node buttons + name labels overlay */}
+      {/* Interactive node touch targets + crisp bilingual name labels */}
       {checkpoints.map((cp, index) => {
         const stop = stops[index];
         if (!stop) return null;
-        const unlocked = unlockedIds.includes(cp.id) || (cp.dayUnlock ?? Infinity) <= currentDay;
+        const unlocked = unlockedSet.has(cp.id) || (cp.dayUnlock ?? Infinity) <= currentDay;
         const isFinish = index === checkpoints.length - 1;
-        const px = stop.x * MAP_W;
-        const py = stop.y * MAP_H;
+        const px = stop.x * mapW;
+        const py = stop.y * mapH;
         const label = language === 'te' ? cp.shortNameTe : cp.shortName;
 
         return (
-          <View key={cp.id} style={{ position: 'absolute', left: px - 36, top: py - 18 }}>
+          <View key={cp.id} style={{ position: 'absolute', left: px - 40, top: py - 22, width: 80, alignItems: 'center' }}>
             <TouchableOpacity
               activeOpacity={0.75}
               style={styles.nodeTouch}
               onPress={() => setSelectedCheckpoint(cp)}
               accessibilityLabel={`View ${cp.name}`}
-            >
-              <Text style={[styles.nodeIcon, isFinish && styles.finishIcon]}>
-                {unlocked ? cp.icon : '🔒'}
-              </Text>
-            </TouchableOpacity>
+            />
             {/* Node name label */}
-            <View style={[styles.nodeLabelBubble, isFinish && styles.finishLabelBubble]}>
+            <View style={[styles.nodeLabelBubble, isFinish && styles.finishLabelBubble, !unlocked && styles.lockedLabelBubble]}>
               <Text style={[styles.nodeLabelText, isFinish && styles.finishLabelText]} numberOfLines={1}>
                 {label}
               </Text>
@@ -227,7 +288,12 @@ export function JourneyTrailMap({ checkpoints, currentDay, unlockedIds, deekshaI
             <View style={styles.modalCard}>
               {/* Header */}
               <View style={styles.modalHeader}>
-                <Text style={styles.modalEmoji}>{selectedCheckpoint.icon}</Text>
+                <SacredIcon
+                  name={selectedUnlocked ? getCheckpointIconName(selectedCheckpoint.id) : 'lock'}
+                  size={44}
+                  withBadge
+                  accent={selectedUnlocked ? '#F0B429' : '#6E8F7B'}
+                />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={styles.modalTitle}>
                     {language === 'te' ? selectedCheckpoint.titleTe : selectedCheckpoint.name}
@@ -309,7 +375,7 @@ export function JourneyTrailMap({ checkpoints, currentDay, unlockedIds, deekshaI
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   frame: {
@@ -320,20 +386,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B4332',
   },
   nodeTouch: {
-    width: 72,
-    height: 36,
+    width: 48,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nodeIcon: { fontSize: 18 },
-  finishIcon: { fontSize: 24 },
   nodeLabelBubble: {
-    backgroundColor: '#000000A0',
+    backgroundColor: '#091610D8',
     borderRadius: 6,
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     alignSelf: 'center',
     maxWidth: 84,
+    borderWidth: 0.5,
+    borderColor: '#FFFFFF22',
+  },
+  lockedLabelBubble: {
+    backgroundColor: '#0D1B14B8',
   },
   finishLabelBubble: {
     backgroundColor: '#D4AF37CC',

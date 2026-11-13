@@ -2,11 +2,24 @@ export interface PoojaSection {
   id: string;
   title: string;
   titleTe: string;
-  category: 'instructions' | 'mangalacaranam' | 'ganapathi' | 'ayyappa_stotra' | 'sharanu_gosha' | 'ashtottaram' | 'pancharatnam' | 'bhajans' | 'ninadalu' | 'harivarasanam';
+  category:
+    | 'instructions'
+    | 'bhojana_mantras'
+    | 'mangalacaranam'
+    | 'ganapathi'
+    | 'ayyappa_stotra'
+    | 'sharanu_gosha'
+    | 'ashtottaram'
+    | 'pancharatnam'
+    | 'naivedyam_aarti'
+    | 'bhajans'
+    | 'ninadalu'
+    | 'harivarasanam';
   mantras: {
     telugu: string;
     english: string;
     meaning?: string;
+    meaningTe?: string;
   }[];
 }
 
@@ -65,23 +78,72 @@ export const DEVOTIONAL_PLAYLISTS: DevotionalSongLink[] = [
 export const AYYAPPA_POOJA_VIDHANAM: PoojaSection[] = [
   {
     id: 'instructions',
-    title: '🔱 Deeksha Puja Instructions (పూజ సమయ నియమాలు)',
-    titleTe: '🔱 దీక్షా పూజ నిష్ఠ నియమాలు',
+    title: '1. Deeksha Rules, Daily Routine & Mala Procedures',
+    titleTe: '1. దీక్షా నియమాలు, దినచర్య & మాల ధారణ విధానం',
     category: 'instructions',
     mantras: [
       {
-        telugu: '📌 పూజకు పూర్వం తప్పనిసరిగా స్నానం చేయాలి.\n📌 నల్ల లేదా నీలి వస్త్రాలు ధరించాలి.\n📌 మాల ధరించి శరణు నాదాన్ని చేయాలి.\n📌 మనస్సును శాంతంగా, శుద్ధంగా ఉంచుకోవాలి.\n📌 నిత్యం ఉదయం & సాయంత్రం పూజ చేయాలి.',
-        english: '📌 Must bathe before beginning puja.\n📌 Wear black or blue sacred clothing.\n📌 Wear the sacred Mala and chant Sharanu.\n📌 Keep the mind calm and pure throughout.\n📌 Perform puja every morning & evening.',
-        meaning: 'Essential discipline rules for the 41-day Mandala Vrutham Deeksha period.',
+        telugu: '📌 పూజా & దినచర్య నియమాలు:\n• బ్రహ్మముహూర్తం (ఉదయం 4:30 - 5:30) లో నిద్రలేచి చన్నీటి స్నానం చేయాలి.\n• నల్లని, నీలి లేదా కాషాయ వస్త్రాలు (స్వామి నియమం ప్రకారం) ధరించాలి.\n• విభూతి, చందనం, కుంకుమ ధరించి తులసి/రుద్రాక్ష మాలకు నమస్కరించాలి.\n• ఉదయం & సాయంత్రం తప్పనిసరిగా దీపారాధన, గణేశ పూజ, 108 శరణు ఘోష జపించాలి.\n• పాదరక్షలు (చెప్పులు) ధరించకూడదు, నేలపై చాప వేసుకుని నిద్రించాలి (దిండు లేకుండా).',
+        english: '📌 Daily Routine & Discipline Rules:\n• Wake up during Brahma Muhurtam (4:30–5:30 AM) and take a cold-water bath.\n• Wear black, dark blue, or saffron sacred attire as guided by your Guru Swamy.\n• Apply Vibhuti, Sandalwood paste (Chandanam), and Kumkum; bow to the sacred Mala.\n• Perform morning & evening Deeparadhana, Ganesha Pooja, and 108 Sharanu Ghosha.\n• Walk barefoot and sleep on a simple mat on the floor without a pillow.',
+        meaning: 'Core daily discipline (Dinacharya) for the 41-day Mandala Vrutham.',
+        meaningTe: '41 రోజుల మండల వ్రతంలో ప్రతి స్వామి పాటించాల్సిన నిత్య దినచర్య.',
+      },
+      {
+        telugu: '📿 మాల ధారణ & విసర్జన మంత్రం:\n"ఓం ఆపద్బాంధవాయ అనాథరక్షకాయ అఖిలాండ కోటి బ్రహ్మాండ నాయకాయ\nశ్రీ ధర్మశాస్త్రాయ స్వామినే శరణమయ్యప్ప ।"\n\n• మాల ధారణ: కార్తీక/మార్గశిర మాసంలో గురు స్వామి చేతుల మీదుగా తులసి లేదా రుద్రాక్ష మాలను ధరించాలి.\n• మాల విసర్జన: శబరిమల దర్శనం తర్వాత ఇంటికి తిరిగి వచ్చి, పూజ చేసి గురు స్వామి అనుమతితో మాలను తీసి ఉంచాలి.',
+        english: '📿 Mala Dharanam & Visarjana Mantra:\n"Om Apadbandhavaya Anatha Rakshakaya Akhilanda Koti Brahmanda Nayakaya\nSri Dharma Shastraya Swamine Saranam Ayyappa |"\n\n• Mala Dharanam: Receive and wear the Tulsi/Rudraksha Mala from a Guru Swamy after bath & Sankalpam.\n• Mala Visarjana: Only after completing Sabarimala Darshan and returning home, perform thanksgiving puja and respectfully remove the Mala.',
+        meaning: 'Sacred mantra chanted while wearing (Dharanam) and respectfully concluding (Visarjana) the Ayyappa Mala.',
+        meaningTe: 'మాల ధరించేటప్పుడు మరియు యాత్ర అనంతరం మాల విసర్జన చేసేటప్పుడు పఠించే మంత్రం.',
+      },
+      {
+        telugu: '🚫 కఠిన నిషేధాలు (Do\'s & Don\'ts):\n• పూర్తి బ్రహ్మచర్యం (మనసా, వాచా, కర్మణా) పాటించాలి.\n• క్షవరం (షేవింగ్), జుట్టు కత్తిరించడం, గోర్లు కత్తిరించడం నిషిద్ధం.\n• మాంసాహారం, ఉల్లి, వెల్లుల్లి, మద్యం, పొగాకు పూర్తిగా వర్జించాలి.\n• తోటి వారందరినీ కులమత బేధం లేకుండా "స్వామి" అని గౌరవంగా పిలవాలి.\n• కోపం, అసత్యం, అపశబ్దాలు పలకరాదు.',
+        english: '🚫 Strict Prohibitions (Vrutham Discipline):\n• Observe complete Brahmacharyam in thought, word, and deed.\n• No haircut, shaving, or nail cutting during the entire Deeksha period.\n• Strictly sattvic vegetarian food — avoid meat, onion, garlic, alcohol, and tobacco.\n• Address every fellow devotee and person respectfully as "Swami" or "Maata".\n• Refrain from anger, harsh speech, and untruth.',
+        meaning: 'Essential vows that purify body and mind for the Sabarimala pilgrimage.',
+        meaningTe: 'శరీరాన్ని మరియు మనస్సును శుద్ధి చేసే పవిత్ర వ్రత నియమాలు.',
+      },
+    ],
+  },
+  {
+    id: 'bhojana_mantras',
+    title: '2. Eating & Biksha Mantras (Bhojana Vidhanam)',
+    titleTe: '2. భోజన & భిక్షా స్వీకరణ మంత్రాలు (ఆహార నియమాలు)',
+    category: 'bhojana_mantras',
+    mantras: [
+      {
+        telugu: '🍽️ భోజనానికి ముందు పఠించే బ్రహ్మార్పణ మంత్రం:\nబ్రహ్మార్పణం బ్రహ్మ హవిః బ్రహ్మాగ్నౌ బ్రహ్మణా హుతమ్ ।\nబ్రహ్మైవ తేన గంతవ్యం బ్రహ్మకర్మ సమాధినా ॥\nఓం సహ నావవతు । సహ నౌ భునక్తు । సహ వీర్యం కరవావహై ।\nతేజస్వినావధీతమస్తు మా విద్విషావహై ॥ ఓం శాంతిః శాంతిః శాంతిః ॥',
+        english: '🍽️ Brahmarpanam Mantra (Before Eating Alpaharam / Biksha):\nBrahmarpanam Brahma Havih Brahmagnau Brahmanaa Hutam |\nBrahmaiva Tena Gantavyam Brahma Karma Samaadhinaa ||\nOm Saha Naavavatu | Saha Nau Bhunaktu | Saha Veeryam Karavaavahai |\nTejasvinaa Vadheetamastu Maa Vidvishaavahai || Om Shantih Shantih Shantih ||',
+        meaning: 'The act of offering is Brahman, the food is Brahman, the digestive fire is Brahman. Consuming food as an offering to the Divine turns every meal into sacred Prasad.',
+        meaningTe: 'భోజనాన్ని బ్రహ్మకు అర్పించి స్వీకరించడం వల్ల ఆహారం పవిత్ర ప్రసాదంగా మారుతుంది.',
+      },
+      {
+        telugu: '🙏 ప్రసాద సమర్పణ & అన్నపూర్ణ శ్లోకం:\nఅన్నపూర్ణే సదాపూర్ణే శంకరప్రాణవల్లభే ।\nజ్ఞానవైరాగ్య సిద్ధ్యర్థం భిక్షాం దేహి చ పార్వతి ॥\nస్వామియే శరణం అయ్యప్ప — భిక్షా సమర్పణం ॥',
+        english: '🙏 Annapoorna Sloka (Accepting Biksha / Prasad):\nAnnapoorne Sadaapoorne Shankara Praana Vallabhe |\nJnaana Vairaagya Siddhyartham Bhikshaam Dehi Cha Paarvati ||\nSwamiye Saranam Ayyappa — Bhiksha Samarpanam ||',
+        meaning: 'O Mother Annapurna, beloved of Lord Shiva, grant us this sacred Biksha for the attainment of spiritual wisdom and detachment.',
+        meaningTe: 'జ్ఞానం మరియు వైరాగ్య సిద్ధి కొరకు తల్లి అన్నపూర్ణాదేవిని భిక్ష ప్రసాదించమని ప్రార్థించే శ్లోకం.',
+      },
+      {
+        telugu: '💧 ఆపోశనం & భోజన విధానం:\n1. భోజనానికి ముందు చేతులు, కాళ్లు శుభ్రంగా కడుక్కోవాలి.\n2. ఆహారం చుట్టూ నీటిని చల్లుతూ "ఓం భూర్భువస్సువః" అని పఠించాలి.\n3. ప్రాణాహుతి మంత్రాలు: ఓం ప్రాణాయ స్వాహా । ఓం అపానాయ స్వాహా । ఓం వ్యానాయ స్వాహా । ఓం ఉదానాయ స్వాహా । ఓం సమానాయ స్వాహా ॥\n4. మాట్లాడకుండా మౌనంగా, శాంత చిత్తంతో భోజనం చేయాలి.\n5. భోజనం తర్వాత: "అన్నదాతా సుఖీభవ — స్వామియే శరణం అయ్యప్ప" అని కృతజ్ఞత చెప్పాలి.',
+        english: '💧 Eating Procedure & Prana Ahuti:\n1. Wash hands and feet cleanly before sitting for meals.\n2. Sprinkle water clockwise around the plate chanting "Om Bhur Bhuvah Svah".\n3. Offer 5 small morsels chanting: Om Pranaya Svaha | Om Apanaya Svaha | Om Vyanaya Svaha | Om Udanaya Svaha | Om Samanaya Svaha ||\n4. Eat silently with gratitude and without wasting a single grain.\n5. After eating: Bless the host chanting "Annadata Sukhibhava — Swamiye Saranam Ayyappa".',
+        meaning: 'Traditional Vedic etiquette for eating Alpaharam (light morning meal) and Biksha (midday sacred meal) during Deeksha.',
+        meaningTe: 'దీక్షలో అల్పాహారం మరియు భిక్ష స్వీకరించేటప్పుడు పాటించే సాంప్రదాయ విధానం.',
       },
     ],
   },
   {
     id: 'mangalacaranam',
-    title: '1. మంగళాచరణము & సంకల్పము',
-    titleTe: '1. మంగళాచరణము & సంకల్పము',
+    title: '3. Snanam, Deeparadhana & Sankalpam (Morning Pooja Start)',
+    titleTe: '3. స్నానం, దీపారాధన, మంగళాచరణం & సంకల్పము',
     category: 'mangalacaranam',
     mantras: [
+      {
+        telugu: '🚿 స్నాన మంత్రం:\nగంగే చ యమునే చైవ గోదావరి సరస్వతి ।\nనర్మదే సింధు కావేరి జలేస్మిన్ సన్నిధిం కురు ॥',
+        english: '🚿 Snana (Sacred Bath) Mantra:\nGange Cha Yamune Chaiva Godavari Saraswati |\nNarmade Sindhu Kaveri Jalesmin Sannidhim Kuru ||',
+        meaning: 'Invoking the seven sacred rivers (Ganga, Yamuna, Godavari, Saraswati, Narmada, Sindhu, Kaveri) into our bath water for purification.',
+      },
+      {
+        telugu: '🪔 దీపారాధన మంత్రం (దీపం వెలిగించేటప్పుడు):\nశుభం కరోతి కల్యాణం ఆరోగ్యం ధనసంపదః ।\nశత్రుబుద్ధి వినాశాయ దీపజ్యోతిర్నమోస్తుతే ॥',
+        english: '🪔 Deeparadhana (Lighting the Lamp) Mantra:\nShubham Karoti Kalyanam Arogyam Dhana Sampadah |\nShatru Buddhi Vinashaya Deepa Jyotir Namostute ||',
+        meaning: 'Salutations to the sacred lamp light which brings auspiciousness, health, prosperity, and removes negative thoughts.',
+      },
       {
         telugu: 'శుక్లాంబరధరం విష్ణుం శశివర్ణం చతుర్భుజం ।\nప్రసన్నవదనం ధ్యాయేత్ సర్వవిఘ్నోపశాంతయే ॥',
         english: 'Shuklam Baradharam Vishnum Shashi Varnam Chatur Bhujam |\nPrasanna Vadanam Dhyayet Sarva Vighno Pashantaye ||',
@@ -101,6 +163,29 @@ export const AYYAPPA_POOJA_VIDHANAM: PoojaSection[] = [
         telugu: '🙏 సంకల్పం:\nమమ ఉపాత్త దురితక్షయ ద్వారా శ్రీ పరమేశ్వర ప్రీత్యర్థం, ధర్మార్థ కామ మోక్ష చతుర్విధ ఫల పురుషార్థ సిద్ధ్యర్థం, శ్రీ అయ్యప్ప స్వామి పూజాం కరిష్యే ॥',
         english: '🙏 Sankalpam (Sacred Resolve):\nFor the removal of all accumulated sins, for pleasing the Supreme Lord, and for the attainment of righteousness, wealth, desire, and liberation — I perform this Ayyappa Swamy Puja.',
         meaning: 'The Sankalpam is the formal divine resolve made before beginning the puja.',
+      },
+      {
+        telugu: '🪷 శ్రీ అయ్యప్ప ధ్యాన శ్లోకం:\nజ్ఞానముద్రాం శాస్త్రుముద్రాం గురుముద్రాం నమామ్యహమ్ ।\nవనముద్రాం శుద్ధముద్రాం రుద్రముద్రాం నమామ్యహమ్ ॥\nశాంతముద్రాం సత్యముద్రాం వ్రతముద్రాం నమామ్యహమ్ ।\nశబర్యాశ్రమ సత్యేన ముద్రాం పాతు సదా మమ ॥',
+        english: '🪷 Sri Ayyappa Dhyana Sloka:\nJnaana Mudraam Shaastru Mudraam Guru Mudraam Namaamyaham |\nVana Mudraam Shuddha Mudraam Rudra Mudraam Namaamyaham ||\nShaanta Mudraam Satya Mudraam Vrata Mudraam Namaamyaham |\nShabaryaashrama Satyena Mudraam Paatu Sadaa Mama ||',
+        meaning: 'Meditation on Lord Ayyappa in His sacred Chinmudra (Jnana Mudra) posture at Sabarimala.',
+      },
+    ],
+  },
+  {
+    id: 'naivedyam_aarti',
+    title: '7. Naivedyam, Karpoora Harathi & Kshama Prarthana (Pooja Closing)',
+    titleTe: '7. నైవేద్యం, కర్పూర హారతి & క్షమా ప్రార్థన (పూజ ముగింపు)',
+    category: 'naivedyam_aarti',
+    mantras: [
+      {
+        telugu: '🥥 నైవేద్య సమర్పణ మంత్రం (పండ్లు / ప్రసాదం సమర్పించేటప్పుడు):\nఓం భూర్భువస్సువః । తత్సవితుర్వరేణ్యం భర్గో దేవస్య ధీమహి । ధియో యో నః ప్రచోదయాత్ ॥\nసత్యం త్వర్తేన పరిషించామి । అమృతమస్తు । అమృతోపస్తరణమసి ।\nశ్రీ ధర్మశాస్తా అయ్యప్ప స్వామినే నమః — నైవేద్యం సమర్పయామి ॥',
+        english: '🥥 Naivedyam (Sacred Food Offering) Mantra:\nOm Bhur Bhuvah Svah | Tat Savitur Varenyam Bhargo Devasya Dheemahi | Dhiyo Yo Nah Prachodayat ||\nSatyam Tvam Rtena Parishinchami | Amritam Astu | Amritopastaranam Asi |\nSri Dharma Shastha Ayyappa Swamine Namah — Naivedyam Samarpayami ||',
+        meaning: 'Offering fruits, milk, or sattvic prasad to Lord Ayyappa during daily morning and evening puja.',
+      },
+      {
+        telugu: '🔥 కర్పూర నీరాజనం (హారతి) & క్షమా ప్రార్థన:\nసమస్త లోక శరణ్యాయ నిత్య నిర్మల మూర్తయే ।\nకర్పూర దీపం దర్శయామి స్వామినే శరణమయ్యప్ప ॥\n\nఅపరాధ సహస్రాణి క్రియంతేఽహర్నిశం మయా ।\nదాసోఽయమితి మాం మత్వా క్షమస్వ పరమేశ్వర ॥',
+        english: '🔥 Karpoora Harathi & Kshama Prarthana (Closing):\nSamasta Loka Sharanyaya Nitya Nirmala Murtaye |\nKarpoora Deepam Darshayami Swamine Saranam Ayyappa ||\n\nAparadha Sahasrani Kriyante Aharnisham Maya |\nDasoyam Iti Mam Matva Kshamasva Parameshwara ||',
+        meaning: 'Waving the camphor flame before Lord Ayyappa and seeking forgiveness for any unintentional mistakes during the puja.',
       },
     ],
   },
@@ -296,6 +381,18 @@ export const AYYAPPA_POOJA_VIDHANAM: PoojaSection[] = [
       {
         telugu: 'జనసహాయకం జయ్యమంగళమ్\nజనసంహారం కీర్తనప్రియమ్ ।\nజలనిధిస్థలం సత్య విక్రమం\nహరిహరాత్మజం దేవమాశ్రయే ॥ 5 ॥\nశరణమయ్యప్ప స్వామి శరణమయ్యప్ప',
         english: 'Jana Sahayakam Jayya Mangalam\nJana Samharam Keertana Priyam |\nJala Nidhi Sthalam Satya Vikramam\nHariharatmajam Deva Mashraye || 5 ||\nSaranam Ayyappa Swami Saranam Ayyappa',
+      },
+      {
+        telugu: 'భూతనాథ సదానంద సర్వభూత దయాపర ।\nరక్ష రక్ష మహాబాహో శాస్త్రే తుభ్యం నమో నమః ॥ 6 ॥\nశరణమయ్యప్ప స్వామి శరణమయ్యప్ప',
+        english: 'Bhootanatha Sadananda Sarva Bhoota Dayapara |\nRaksha Raksha Mahabaho Shastre Tubhyam Namo Namah || 6 ||\nSaranam Ayyappa Swami Saranam Ayyappa',
+      },
+      {
+        telugu: 'ఆశ్రిత వత్సల ఆనంద రూప\nవిశ్వమనోహర వీరమణికంఠ ।\nఅఖిలాండ నాయక భక్తజనప్రియ\nహరిహరాత్మజం దేవమాశ్రయే ॥ 7 ॥\nశరణమయ్యప్ప స్వామి శరణమయ్యప్ప',
+        english: 'Ashrita Vatsala Ananda Roopa\nVishwa Manohara Veera Manikanta |\nAkhilanda Nayaka Bhaktajana Priya\nHariharatmajam Deva Mashraye || 7 ||\nSaranam Ayyappa Swami Saranam Ayyappa',
+      },
+      {
+        telugu: 'శరణు మాలికా ధారణ ప్రియ\nపంబయిల్ వాస పందళ కుమార ।\nకలియుగ వరద కాంతిమలై వాస\nహరిహరాత్మజం దేవమాశ్రయే ॥ 8 ॥\nశరణమయ్యప్ప స్వామి శరణమయ్యప్ప',
+        english: 'Saranu Malika Dharana Priya\nPambayil Vasa Pandala Kumara |\nKaliyuga Varada Kantimalai Vasa\nHariharatmajam Deva Mashraye || 8 ||\nSaranam Ayyappa Swami Saranam Ayyappa',
       },
       {
         telugu: '🕯️ హరివరాసనం ముగింపు\nఓం శ్రీ ధర్మశాస్తా భగవతే నమః ।\nఓం హరిహర పుత్ర స్వామినే నమః ।\nఓం అయ్యప్ప స్వామినే నమః ।\n\nస్వామి శరణం అయ్యప్ప ।\nతత్ సత్ బ్రహ్మార్పణమస్తు 🙏',

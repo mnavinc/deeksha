@@ -66,6 +66,7 @@ export function corsOriginHandler(
 
 export async function buildApp(opts: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
+    trustProxy: true,
     logger:
       opts.logger ??
       (env.NODE_ENV === 'test'
@@ -178,9 +179,21 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
     });
   }
 
-  // Echo x-request-id on all responses for distributed tracing
+  // Echo x-request-id on all responses for distributed tracing & prevent caching of auth/user data
   app.addHook('onSend', async (request, reply) => {
     reply.header('x-request-id', request.id);
+    if (request.url.startsWith('/v1/auth') || request.url.startsWith('/v1/me')) {
+      reply.header('Cache-Control', 'no-store');
+    }
+  });
+
+  // Standardized 404 handler
+  app.setNotFoundHandler((request, reply) => {
+    return reply.status(404).send({
+      error: 'NOT_FOUND',
+      message: `Route ${request.method} ${request.url} not found`,
+      requestId: request.id,
+    });
   });
 
   // Global standardized error handler

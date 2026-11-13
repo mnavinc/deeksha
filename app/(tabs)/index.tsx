@@ -1,5 +1,5 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
-import { useState, useRef, useCallback } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { useState, useCallback } from 'react';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { getDeekshaType } from '@/data/deekshaTypes';
@@ -34,7 +34,7 @@ export default function HomeScreen() {
 
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [checkinDone, setCheckinDone] = useState(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(1));
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const alreadyCheckedIn = lastDailyCheckinDate === todayStr;

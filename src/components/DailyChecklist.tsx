@@ -1,10 +1,23 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { DAILY_CHECKPOINTS } from '@/data/journeyCheckpoints';
 import type { DailyCheckpointId } from '@/data/journeyCheckpoints';
 import { CHECKPOINT_POINTS } from '@/data/achievements';
 import { colors, spacing } from '@/theme/colors';
 import { useI18n } from '@/i18n';
+import { SacredIcon, type SacredIconName } from '@/components/SacredIcons';
+
+const CHECKPOINT_SACRED_ICONS: Record<DailyCheckpointId, SacredIconName> = {
+  prayer: 'flame',
+  saranam: 'mala',
+  vegetarian: 'bhojana',
+  noAlcohol: 'lotus',
+  noSmoking: 'sunrise',
+  brahmacharyam: 'star',
+  walking: 'footprints',
+  eveningPrayer: 'temple',
+};
 
 interface DailyChecklistProps {
   checkpoints: Record<DailyCheckpointId, boolean>;
@@ -25,7 +38,7 @@ const CHECKPOINT_I18N_KEYS: Record<DailyCheckpointId, Parameters<ReturnType<type
   eveningPrayer: 'eveningPrayer',
 };
 
-export function DailyChecklist({
+export const DailyChecklist = React.memo(function DailyChecklist({
   checkpoints,
   onToggle,
   saranamCount,
@@ -48,7 +61,13 @@ export function DailyChecklist({
             onPress={() => (item.id === 'saranam' ? onSaranamPress() : onToggle(item.id))}
             activeOpacity={0.7}
           >
-            <Text style={styles.icon}>{done ? '✅' : item.icon}</Text>
+            <View style={[styles.iconBadge, done && styles.iconBadgeDone]}>
+              {done ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+              ) : (
+                <SacredIcon name={CHECKPOINT_SACRED_ICONS[item.id]} size={20} color="#FFFBE6" accent="#F0B429" />
+              )}
+            </View>
             <View style={styles.textWrap}>
               <Text style={[styles.label, done && styles.labelDone]}>{label}</Text>
               {item.id === 'saranam' && (
@@ -61,7 +80,7 @@ export function DailyChecklist({
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
@@ -72,7 +91,20 @@ const styles = StyleSheet.create({
     borderRadius: 12, borderWidth: 1, borderColor: colors.border, gap: spacing.sm,
   },
   rowDone: { borderColor: colors.success, backgroundColor: '#3FB95015' },
-  icon: { fontSize: 22 },
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#1B4332',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F0B42940',
+  },
+  iconBadgeDone: {
+    backgroundColor: '#3FB95022',
+    borderColor: colors.success,
+  },
   textWrap: { flex: 1 },
   label: { color: colors.text, fontSize: 15, fontWeight: '500' },
   labelDone: { color: colors.success },

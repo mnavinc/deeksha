@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { getAvatarStage } from '@/data/achievements';
 import { getSwamiTier } from '@/data/swamiNames';
 import { colors, spacing } from '@/theme/colors';
+import { SacredIcon } from '@/components/SacredIcons';
 
 interface AvatarDisplayProps {
   points: number;
@@ -10,14 +11,15 @@ interface AvatarDisplayProps {
   name: string;
 }
 
-export function AvatarDisplay({ points, pilgrimageCount, name }: AvatarDisplayProps) {
+export const AvatarDisplay = React.memo(function AvatarDisplay({ points, pilgrimageCount, name }: AvatarDisplayProps) {
   const stage = getAvatarStage(points);
   const tier = getSwamiTier(Math.max(pilgrimageCount, 1));
+  const iconName = points >= 1000 ? 'temple' : points >= 500 ? 'flame' : points >= 200 ? 'lotus' : 'mala';
 
   return (
     <View style={styles.container}>
       <View style={styles.avatarCircle}>
-        <Text style={styles.emoji}>{stage.emoji}</Text>
+        <SacredIcon name={iconName} size={34} color="#FFFBE6" accent="#F0B429" />
       </View>
       <View style={styles.info}>
         <Text style={styles.name}>Swami {name}</Text>
@@ -30,7 +32,7 @@ export function AvatarDisplay({ points, pilgrimageCount, name }: AvatarDisplayPr
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

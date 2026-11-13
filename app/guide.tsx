@@ -5,30 +5,100 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle, getClayButtonStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { HeaderNav } from '@/components/HeaderNav';
 import { AuthModal } from '@/components/AuthModal';
+import { SacredIcon } from '@/components/SacredIcons';
 
 export default function GuideScreen() {
-  const { t, language } = useI18n();
+  const { language } = useI18n();
   const colors = useThemeColors();
   const theme = useAppStore((s) => s.theme);
   const activeTheme = theme === 'system' ? 'dark' : theme;
   const profile = useAppStore((s) => s.profile);
-  const { width } = useWindowDimensions();
-  const isDesktop = width > 768;
 
-  const [activeTab, setActiveTab] = useState<'benefits' | 'tutorial' | 'traditions'>('benefits');
+  const [activeTab, setActiveTab] = useState<'kanni' | 'benefits' | 'tutorial' | 'traditions'>('kanni');
   const [authVisible, setAuthVisible] = useState(false);
 
   const isTelugu = language === 'te';
+
+  const kanniSchedule = [
+    {
+      time: isTelugu ? 'ఉదయం 4:30 - 5:30' : '4:30 AM - 5:30 AM',
+      title: isTelugu ? 'బ్రహ్మముహూర్తం & చన్నీటి స్నానం' : 'Brahma Muhurtam & Cold Bath',
+      desc: isTelugu
+        ? 'సూర్యోదయానికి ముందే లేచి చన్నీటి స్నానం చేసి, నల్ల/నీలి వస్త్రాలు ధరించి, విభూతి-చందనం పెట్టుకోవాలి.'
+        : 'Wake before sunrise, take a cold-water bath, wear black/blue attire, and apply Vibhuti & Chandanam.',
+    },
+    {
+      time: isTelugu ? 'ఉదయం 5:30 - 6:30' : '5:30 AM - 6:30 AM',
+      title: isTelugu ? 'ఉదయకాల పూజ & 108 శరణు ఘోష' : 'Morning Pooja & 108 Sharanu Ghosha',
+      desc: isTelugu
+        ? 'దీపారాధన చేసి గణపతి పూజ, గురు వందనం, 108 శరణు ఘోష మరియు నైవేద్యం సమర్పించాలి.'
+        : 'Light the sacred lamp, perform Ganesha Pooja, Guru Vandana, 108 Sharanu Ghosha, and offer Naivedyam.',
+    },
+    {
+      time: isTelugu ? 'ఉదయం 7:30 - 8:30' : '7:30 AM - 8:30 AM',
+      title: isTelugu ? 'సాత్విక అల్పాహారం (బ్రహ్మార్పణం)' : 'Sattvic Alpaharam (With Food Mantra)',
+      desc: isTelugu
+        ? 'పూజ తర్వాత మాత్రమే బ్రహ్మార్పణ మంత్రం పఠించి పండ్లు, పాలు లేదా ఉల్లి-వెల్లుల్లి లేని అల్పాహారం తీసుకోవాలి.'
+        : 'Only after puja, chant Brahmarpanam and eat light sattvic breakfast without onion or garlic.',
+    },
+    {
+      time: isTelugu ? 'మధ్యాహ్నం 12:30 - 1:30' : '12:30 PM - 1:30 PM',
+      title: isTelugu ? 'భిక్ష (పవిత్ర మధ్యాహ్న భోజనం)' : 'Biksha (Sacred Midday Meal)',
+      desc: isTelugu
+        ? 'భగవంతుని ప్రసాదంగా భావించి మౌనంగా భోజనం స్వీకరించాలి. కడుపులో 3 వంతులు ఆహారం, 1 వంతు ఖాళీగా ఉంచాలి.'
+        : 'Eat silently viewing food as Prasad. Chanting Annapoorna Sloka before eating brings gratitude.',
+    },
+    {
+      time: isTelugu ? 'సాయంత్రం 6:00 - 7:30' : '6:00 PM - 7:30 PM',
+      title: isTelugu ? 'సంధ్యా స్నానం, భజన & హరివరాసనం' : 'Evening Bath, Bhajan & Harivarasanam',
+      desc: isTelugu
+        ? 'మరోసారి స్నానం చేసి దీపారాధన, భజనలు మరియు పడుకునే ముందు హరివరాసనం పాడాలి. నేలపై చాపపై నిద్రించాలి.'
+        : 'Take an evening bath, perform Deeparadhana, sing bhajans/Harivarasanam, and sleep on a floor mat.',
+    },
+  ];
+
+  const irumudiChecklist = isTelugu
+    ? [
+        '🥥 ముద్ర కొబ్బరికాయ (ఆవు నెయ్యితో నింపినది) — అభిషేకం కోసం',
+        '🍚 శుద్ధమైన బియ్యం (ముడి బియ్యం), పసుపు, కుంకుమ, కర్పూరం, అగరబత్తీలు',
+        '🌿 తమలపాకులు, వక్కలు, దక్షిణ & సన్నిధానం కానుకలు',
+        '🕯️ 2 కొబ్బరికాయలు (కన్నిమూల గణపతి & 18 మెట్ల వద్ద కొట్టడానికి)',
+        '🎒 వెనుక అరలో: యాత్రా వస్త్రాలు, టవల్, త్రాగునీరు & వ్యక్తిగత సామగ్రి',
+      ]
+    : [
+        '🥥 Mudra Coconut filled with pure cow ghee (Neyy Thenga) for Abhishekam',
+        '🍚 Raw rice, turmeric, kumkum, camphor (Karpooram), and agarbatti',
+        '🌿 Betel leaves, areca nuts, and offerings for Malikappuram & Vavar',
+        '🕯️ 2 breaking coconuts (for Kannimoola Ganapathi & Pathinettam Padi)',
+        '🎒 Back compartment: Extra black/blue dhoti, towel, flask & travel essentials',
+      ];
+
+  const kanniRules = [
+    {
+      doText: isTelugu ? 'అందరినీ "స్వామి" లేదా "మాతా" అని పిలవండి' : 'Address everyone respectfully as "Swami" or "Maata"',
+      dontText: isTelugu ? 'కోపం, అబద్ధం, అపశబ్దాలు పలకవద్దు' : 'Avoid anger, lies, harsh words, or ego',
+    },
+    {
+      doText: isTelugu ? 'రోజూ 3–5 కి.మీ నడక వ్యాయామం చేయండి (కొండ ఎక్కేందుకు)' : 'Walk 3–5 km daily to build Neelimala & Karimala trekking stamina',
+      dontText: isTelugu ? 'క్షవరం (షేవింగ్), జుట్టు, గోర్లు కత్తిరించవద్దు' : 'Do not cut hair, shave, or trim nails during Deeksha',
+    },
+    {
+      doText: isTelugu ? 'సాత్విక శాకాహారం (ఉల్లి, వెల్లుల్లి లేకుండా) తినండి' : 'Eat fresh home-cooked sattvic vegetarian food (no onion/garlic)',
+      dontText: isTelugu ? 'మాంసాహారం, మద్యం, పొగాకు, బయటి జంక్ ఫుడ్ వద్దు' : 'Strictly no meat, alcohol, tobacco, or outside junk food',
+    },
+    {
+      doText: isTelugu ? 'ఎరుమేలిలో పేట్ట తుళ్ళల్ & శరంకుత్తిలో శరం సమర్పించండి' : 'Kanni Swamies perform Erumeli Petta Thullal & Saramkuthi arrow ritual',
+      dontText: isTelugu ? 'చర్మపు బెల్టులు, చెప్పులు (నియమం మేరకు) ధరించవద్దు' : 'Avoid footwear & leather items; walk barefoot with mindfulness',
+    },
+  ];
 
   const benefitsData = [
     {
@@ -171,6 +241,26 @@ export default function GuideScreen() {
             <TouchableOpacity
               style={[
                 styles.tabBtn,
+                activeTab === 'kanni' && [
+                  styles.activeTabBtn,
+                  { backgroundColor: colors.primary },
+                ],
+              ]}
+              onPress={() => setActiveTab('kanni')}
+            >
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  { color: activeTab === 'kanni' ? '#0D1117' : colors.textMuted },
+                ]}
+              >
+                {isTelugu ? '🙏 కన్ని స్వామి గైడ్' : '🙏 First-Time Guide'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
                 activeTab === 'benefits' && [
                   styles.activeTabBtn,
                   { backgroundColor: colors.primary },
@@ -229,6 +319,98 @@ export default function GuideScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Tab 0: First-Time Kanni Swamy Guide */}
+        {activeTab === 'kanni' && (
+          <View style={styles.sectionContainer}>
+            {/* Intro Banner */}
+            <View
+              style={[
+                styles.card,
+                getClayStyle(activeTheme, 'medium', colors.surface),
+                { borderColor: colors.primary },
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <SacredIcon name="mala" size={34} withBadge />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                    {isTelugu ? 'మొదటిసారి దీక్ష (కన్ని స్వామి) పూర్తి సమాచారం' : 'Complete First-Time (Kanni Swamy) Handbook'}
+                  </Text>
+                  <Text style={[styles.cardDesc, { color: colors.textMuted }]}>
+                    {isTelugu
+                      ? 'గురు స్వామి మార్గదర్శకత్వంలో మాల ధారణ నుండి శబరిమల దర్శనం వరకు తెలుసుకోవాల్సిన ముఖ్య విషయాలు.'
+                      : 'Everything a first-time devotee needs to know from Mala Dharanam under a Guru Swamy to climbing the 18 Holy Steps.'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Daily Dinacharya */}
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>
+              {isTelugu ? '⏰ నిత్య దినచర్య (Daily Routine)' : '⏰ Daily Routine (Dinacharya)'}
+            </Text>
+            <View style={styles.stepsList}>
+              {kanniSchedule.map((item, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.stepCard,
+                    getClayStyle(activeTheme, 'low', colors.surface),
+                    { borderColor: colors.border },
+                  ]}
+                >
+                  <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.stepNumberText}>{idx + 1}</Text>
+                  </View>
+                  <View style={styles.stepBody}>
+                    <Text style={[styles.traditionTagText, { color: colors.primary }]}>{item.time}</Text>
+                    <Text style={[styles.stepTitle, { color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.stepDesc, { color: colors.textMuted }]}>{item.desc}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Do's and Don'ts */}
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>
+              {isTelugu ? '⚖️ పాటించాల్సినవి & నిషేధాలు (Do\'s & Don\'ts)' : '⚖️ Essential Do\'s & Don\'ts'}
+            </Text>
+            <View style={styles.grid}>
+              {kanniRules.map((rule, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.card,
+                    getClayStyle(activeTheme, 'low', colors.surface),
+                    { borderColor: colors.border },
+                  ]}
+                >
+                  <Text style={[styles.cardDesc, { color: '#34D399', fontWeight: '700' }]}>✓ {rule.doText}</Text>
+                  <Text style={[styles.cardDesc, { color: '#F87171', marginTop: 4 }]}>✕ {rule.dontText}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Irumudi Kattu Checklist */}
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>
+              {isTelugu ? '🎒 ఇరుముడి కట్టు (కెట్టునిరక్కల్) సామగ్రి' : '🎒 Irumudi Kattu Packing Checklist'}
+            </Text>
+            <View
+              style={[
+                styles.card,
+                getClayStyle(activeTheme, 'low', colors.surface),
+                { borderColor: colors.border },
+              ]}
+            >
+              {irumudiChecklist.map((line, idx) => (
+                <Text key={idx} style={[styles.cardDesc, { color: colors.textMuted, lineHeight: 22 }]}>
+                  {line}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Tab 1: Benefits */}
         {activeTab === 'benefits' && (

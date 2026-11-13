@@ -8,6 +8,10 @@ export const app = await buildApp();
 
 export const io = new SocketIOServer(app.server, {
   cors: { origin: corsOriginHandler, credentials: true },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 20_000,
+  pingInterval: 25_000,
+  maxHttpBufferSize: 64 * 1024, // 64KB max message payload
 });
 
 // Socket.IO authentication middleware
@@ -89,7 +93,10 @@ io.on('connection', (socket) => {
 });
 
 // Graceful shutdown handling
+let isShuttingDown = false;
 export const gracefulShutdown = async (signal: string) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   app.log.info(`Received ${signal}. Initiating graceful shutdown...`);
   try {
     io.close();

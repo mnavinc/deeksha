@@ -39,6 +39,24 @@ const FAQS_DATA: FAQItem[] = [
     aEn: 'Our Pooja Store displays purified items (Tulsi Mala, Ghee, Karpuram, Vibhuti). Clicking "Buy" opens the product directly on Amazon, Instamart, or Blinkit for instant home delivery.',
     aTe: 'మా పూజా స్టోర్ పరిశుద్ధమైన వస్తువులను (తులసి మాల, నెయ్యి, కర్పూరం, విభూతి) చూపిస్తుంది. "Buy" నొక్కడం ద్వారా అమెజాన్ లేదా బ్లింకిట్‌లో నేరుగా ఆర్డర్ చేసుకోవచ్చు.',
   },
+  {
+    qEn: 'What should a first-time devotee (Kanni Swamy) do before wearing the Mala?',
+    qTe: 'మొదటిసారి దీక్ష తీసుకునే కన్ని స్వామి మాల ధారణకు ముందు ఏమి చేయాలి?',
+    aEn: 'Seek blessings from parents and elders, connect with an experienced Guru Swamy, purchase black/blue dhotis and a Tulsi/Rudraksha Mala, bathe before sunrise, and wear the Mala at a temple or Guru Swamy puja mandapam after Sankalpam.',
+    aTe: 'తల్లిదండ్రులు మరియు పెద్దల ఆశీర్వాదం తీసుకుని, అనుభవజ్ఞుడైన గురు స్వామిని సంప్రదించాలి. నల్ల/నీలి వస్త్రాలు, తులసి/రుద్రాక్ష మాల సిద్ధం చేసుకుని, శుభ ముహూర్తంలో స్నానం చేసి గురు స్వామి చేతుల మీదుగా మాల ధరించాలి.',
+  },
+  {
+    qEn: 'Can I take prescribed medicines or eat while travelling during Deeksha?',
+    qTe: 'దీక్ష సమయంలో డాక్టర్ సూచించిన మందులు వేసుకోవచ్చా? ప్రయాణంలో ఆహార నియమాలు ఏమిటి?',
+    aEn: 'Yes, essential prescribed medicines should never be stopped. For meals during travel, prefer fruits, milk, tender coconut, or pure sattvic vegetarian food without onion/garlic, and chant the Brahmarpanam food mantra before eating.',
+    aTe: 'అవును, డాక్టర్ సూచించిన మందులను తప్పనిసరిగా వేసుకోవచ్చు. ప్రయాణంలో ఉన్నప్పుడు పండ్లు, పాలు, కొబ్బరి నీళ్లు లేదా ఉల్లి-వెల్లుల్లి లేని సాత్విక శాకాహారం మాత్రమే బ్రహ్మార్పణ మంత్రం పఠించి స్వీకరించాలి.',
+  },
+  {
+    qEn: 'How and when is the Ayyappa Mala removed (Mala Visarjana)?',
+    qTe: 'అయ్యప్ప మాల విసర్జన (మాల తీయడం) ఎప్పుడు, ఎలా చేయాలి?',
+    aEn: 'The Mala is never removed before Sabarimala Darshan unless there is an unavoidable family bereavement (Sutakam), in which case consult your Guru Swamy immediately. Normally, after returning home from Sabarimala, perform puja, offer prasadam, and remove the Mala with Guru Swamy or family blessings.',
+    aTe: 'శబరిమల దర్శనం పూర్తి చేసి ఇంటికి తిరిగి వచ్చిన తర్వాత, ఇంట్లో పూజ చేసి ప్రసాదం నివేదించి గురు స్వామి అనుమతితో మాల విసర్జన చేయాలి. అనుకోని సూతకం (అశుభం) జరిగితే వెంటనే గురు స్వామిని సంప్రదించాలి.',
+  },
 ];
 
 export default function FAQsScreen() {

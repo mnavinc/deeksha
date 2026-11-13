@@ -37,4 +37,16 @@ describe('Health and Readiness Probes', () => {
 
     assert.ok(response.headers['x-request-id']);
   });
+
+  it('Unknown routes return standardized 404 NOT_FOUND with requestId', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/does-not-exist',
+    });
+
+    assert.equal(response.statusCode, 404);
+    const body = JSON.parse(response.body);
+    assert.equal(body.error, 'NOT_FOUND');
+    assert.ok(body.requestId);
+  });
 });

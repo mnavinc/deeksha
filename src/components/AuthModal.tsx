@@ -31,7 +31,8 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
   const theme = useAppStore((s) => s.theme);
   const systemScheme = useColorScheme();
   const activeTheme: 'light' | 'dark' = theme === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : theme;
-  const setProfile = useAppStore((s) => s.setProfile);
+  const setAuth = useAppStore((s) => s.setAuth);
+  const hydrateFromBackend = useAppStore((s) => s.hydrateFromBackend);
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
@@ -102,14 +103,14 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
       if (!res.ok) {
         setError(data?.message ?? 'Invalid OTP. Please try again.');
       } else {
-        // Store JWT token (we store it via profile, real apps use SecureStore)
-        setProfile({
+        setAuth(data.token, {
           id: data.user.id,
           name: (data.user.name ?? name.trim()) || 'Swami',
           language: 'te',
           pilgrimageCount: 1,
           onboardingComplete: false,
         });
+        await hydrateFromBackend();
         onSuccess();
       }
     } catch {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -22,13 +22,7 @@ export default function WelcomeScreen() {
   const { height } = useWindowDimensions();
   const { action } = useLocalSearchParams<{ action?: string }>();
 
-  const [authVisible, setAuthVisible] = useState(false);
-
-  useEffect(() => {
-    if (action === 'signin') {
-      setAuthVisible(true);
-    }
-  }, [action]);
+  const [authVisible, setAuthVisible] = useState(action === 'signin');
 
   const features = [
     {
@@ -50,7 +44,12 @@ export default function WelcomeScreen() {
 
   const handleAuthSuccess = () => {
     setAuthVisible(false);
-    router.replace('/onboarding/profile');
+    const { profile, enrollment } = useAppStore.getState();
+    if (profile?.onboardingComplete && enrollment) {
+      router.replace('/(tabs)');
+    } else {
+      router.replace('/onboarding/profile');
+    }
   };
 
   return (

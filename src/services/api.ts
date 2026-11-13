@@ -29,19 +29,64 @@ export function getBaseApiUrl(): string {
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
+  retries?: number;
 }
+
+const RETRYABLE_STATUSES = new Set([408, 429, 502, 503, 504]);
 
 export class ApiClient {
   private readonly baseUrl: string;
+  private readonly inflightGets = new Map<string, Promise<unknown>>();
 
   constructor(private readonly accessToken?: string, customBaseUrl?: string) {
     this.baseUrl = (customBaseUrl ?? getBaseApiUrl()).replace(/\/+$/, '');
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { timeoutMs = 15_000, ...init } = options;
+    const method = (options.method ?? 'GET').toUpperCase();
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     const url = `${this.baseUrl}${cleanPath}`;
+
+    // Deduplicate concurrent identical GET requests
+    if (method === 'GET' && !options.signal) {
+      const existing = this.inflightGets.get(url);
+      if (existing) return existing as Promise<T>;
+      const promise = this.executeWithRetry<T>(url, method, options).finally(() => {
+        this.inflightGets.delete(url);
+      });
+      this.inflightGets.set(url, promise);
+      return promise;
+    }
+
+    return this.executeWithRetry<T>(url, method, options);
+  }
+
+  private async executeWithRetry<T>(url: string, method: string, options: RequestOptions): Promise<T> {
+    const maxRetries = options.retries ?? (method === 'GET' ? 2 : 0);
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.executeOnce<T>(url, options);
+      } catch (err) {
+        lastError = err;
+        const isRetryable =
+          err instanceof ApiError &&
+          (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT' || RETRYABLE_STATUSES.has(err.status));
+
+        if (!isRetryable || attempt === maxRetries) {
+          throw err;
+        }
+        const backoffMs = Math.min(1000 * 2 ** attempt, 4000) + Math.floor(Math.random() * 200);
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      }
+    }
+
+    throw lastError;
+  }
+
+  private async executeOnce<T>(url: string, options: RequestOptions): Promise<T> {
+    const { timeoutMs = 15_000, retries: _retries, ...init } = options;
 
     const headers: Record<string, string> = {
       Accept: 'application/json',
@@ -95,11 +140,51 @@ export class ApiClient {
   }
 
   getMe() {
-    return this.request<{ id: string; email?: string; display_name: string; language: string }>('/v1/me');
+    return this.request<{ id: string; email?: string; display_name: string; language: 'en' | 'te' | 'ml' }>('/v1/me');
+  }
+
+  updateMe(body: { displayName: string; language: 'en' | 'te' | 'ml' }) {
+    return this.request<{ id: string; display_name: string; language: 'en' | 'te' | 'ml' }>('/v1/me', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
   }
 
   getActiveEnrollment() {
-    return this.request('/v1/enrollments/active');
+    return this.request<{
+      id: string;
+      deeksha_type_id: string;
+      mala_dharanam_date: string;
+      duration_days: number;
+      target_yatra_date?: string | null;
+      pilgrimage_count: number;
+      status: string;
+    } | null>('/v1/enrollments/active');
+  }
+
+  createEnrollment(body: {
+    deekshaTypeId: string;
+    malaDharanamDate: string;
+    durationDays: number;
+    targetYatraDate?: string;
+    pilgrimageCount: number;
+  }) {
+    return this.request<{ id: string }>('/v1/enrollments', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  getEnrollmentLogs(enrollmentId: string) {
+    return this.request<
+      Array<{
+        log_date: string;
+        checkpoints: Record<string, boolean>;
+        walking_km: number;
+        saranam_count: number;
+        notes?: string | null;
+      }>
+    >(`/v1/enrollments/${enrollmentId}/logs`);
   }
 
   saveDailyLog(enrollmentId: string, log: unknown) {
@@ -109,7 +194,28 @@ export class ApiClient {
     });
   }
 
+  completeEnrollment(enrollmentId: string) {
+    return this.request(`/v1/enrollments/${enrollmentId}/complete`, {
+      method: 'PATCH',
+    });
+  }
+
   getGroups() {
-    return this.request('/v1/groups');
+    return this.request<
+      Array<{
+        id: string;
+        name: string;
+        season: string;
+        route?: string | null;
+        members?: Array<{ userId: string; role: 'GROUP_ADMIN' | 'EXPENSE_MANAGER' | 'MEMBER'; name: string }>;
+      }>
+    >('/v1/groups');
+  }
+
+  createGroup(body: { name: string; season: string; route?: string }) {
+    return this.request<{ id: string; name: string; season: string; route: string | null }>('/v1/groups', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
   }
 }

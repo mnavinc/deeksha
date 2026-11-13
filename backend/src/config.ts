@@ -44,6 +44,10 @@ const envSchema = z.object({
     }),
   CORS_ORIGIN: z.string().default('http://localhost:8081'),
 
+  // Database Pool
+  POOL_MAX: z.coerce.number().int().min(1).max(100).default(20),
+  POOL_IDLE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30_000),
+
   // Rate Limiting
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),

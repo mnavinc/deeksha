@@ -8,6 +8,7 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { JourneyTrailMap } from '@/components/JourneyTrailMap';
 import { HeaderNav } from '@/components/HeaderNav';
+import { SacredIcon, getCheckpointIconName } from '@/components/SacredIcons';
 import { useI18n } from '@/i18n';
 
 type ViewMode = 'map' | 'timeline';
@@ -125,7 +126,12 @@ export default function JourneyScreen() {
                     ]}
                   >
                     <View style={styles.timelineTop}>
-                      <Text style={styles.timelineIcon}>{unlocked ? item.icon : '🔒'}</Text>
+                      <SacredIcon
+                        name={unlocked ? getCheckpointIconName(item.id) : 'lock'}
+                        size={30}
+                        withBadge
+                        accent={unlocked ? colors.primary : '#4A6B57'}
+                      />
                       <View style={styles.timelineCopy}>
                         <Text style={[styles.timelineTitle, { color: unlocked ? colors.text : colors.textDim }]}>{title}</Text>
                         <Text style={[styles.timelinePhase, { color: colors.textDim }]}>
@@ -187,7 +193,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, gap: 6, marginBottom: 8,
   },
   timelineTop: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  timelineIcon: { fontSize: 22, width: 30 },
   timelineCopy: { flex: 1 },
   timelineTitle: { fontSize: 15, fontWeight: '700' },
   timelinePhase: { fontSize: 10, marginTop: 2, textTransform: 'capitalize' },

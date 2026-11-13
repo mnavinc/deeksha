@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { AYYAPPA_JOURNEY } from '@/data/journeyCheckpoints';
 import { colors, spacing } from '@/theme/colors';
+import { SacredIcon, getCheckpointIconName } from '@/components/SacredIcons';
 
 interface JourneyPathProps {
   unlockedIds: string[];
   currentDay: number;
 }
 
-export function JourneyPath({ unlockedIds, currentDay }: JourneyPathProps) {
+export const JourneyPath = React.memo(function JourneyPath({ unlockedIds, currentDay }: JourneyPathProps) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
       <View style={styles.path}>
@@ -30,7 +31,12 @@ export function JourneyPath({ unlockedIds, currentDay }: JourneyPathProps) {
                   isCurrent && styles.nodeCurrent,
                 ]}
               >
-                <Text style={styles.nodeIcon}>{unlocked ? cp.icon : '🔒'}</Text>
+                <SacredIcon
+                  name={unlocked ? getCheckpointIconName(cp.id) : 'lock'}
+                  size={24}
+                  color={unlocked ? '#FFFBE6' : '#6E8F7B'}
+                  accent={unlocked ? '#F0B429' : '#4A6B57'}
+                />
               </View>
               <Text style={[styles.nodeName, !unlocked && styles.nodeNameLocked]} numberOfLines={2}>
                 {cp.name}
@@ -44,7 +50,7 @@ export function JourneyPath({ unlockedIds, currentDay }: JourneyPathProps) {
       </View>
     </ScrollView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   scroll: { marginHorizontal: -spacing.md },

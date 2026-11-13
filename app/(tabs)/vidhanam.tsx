@@ -18,17 +18,21 @@ import { AYYAPPA_POOJA_VIDHANAM, DEVOTIONAL_PLAYLISTS } from '@/data/poojaVidhan
 
 const CATEGORY_FILTERS = [
   { id: 'all', labelTe: 'అన్నీ', labelEn: 'All' },
-  { id: 'playlists', labelTe: '🎵 భజన పాటలు & ప్లేలిస్టులు', labelEn: '🎵 Songs & Playlists' },
-  { id: 'instructions', labelTe: 'నియమాలు', labelEn: 'Rules' },
-  { id: 'mangalacaranam', labelTe: 'సంకల్పం', labelEn: 'Sankalpam' },
+  { id: 'instructions', labelTe: 'నియమాలు & విధానం', labelEn: 'Rules & Procedure' },
+  { id: 'bhojana_mantras', labelTe: '🍽️ భోజన మంత్రాలు', labelEn: '🍽️ Eating / Biksha' },
+  { id: 'mangalacaranam', labelTe: 'స్నానం & సంకల్పం', labelEn: 'Bath & Sankalpam' },
   { id: 'ganapathi', labelTe: 'గణేశ పూజ', labelEn: 'Ganesha' },
-  { id: 'sharanu_gosha', labelTe: 'శరణు ఘోష', labelEn: 'Sharanu Ghosha' },
+  { id: 'sharanu_gosha', labelTe: '108 శరణు ఘోష', labelEn: '108 Sharanu Ghosha' },
   { id: 'ashtottaram', labelTe: 'అష్టోత్తరం', labelEn: 'Ashtottaram' },
   { id: 'pancharatnam', labelTe: 'పంచరత్నం', labelEn: 'Pancharatnam' },
+  { id: 'naivedyam_aarti', labelTe: 'నైవేద్యం & హారతి', labelEn: 'Naivedyam & Aarti' },
   { id: 'bhajans', labelTe: 'భజనలు', labelEn: 'Bhajans' },
   { id: 'ninadalu', labelTe: 'నినాదాలు', labelEn: 'Ninadalu' },
-  { id: 'harivarasanam', labelTe: 'హరివరాసనం', labelEn: 'Harivarasanam' },
+  { id: 'harivarasanam', labelTe: 'హరివరాసనం (8)', labelEn: 'Harivarasanam (8)' },
+  { id: 'playlists', labelTe: '🎵 ఆడియో & పాటలు', labelEn: '🎵 Songs & Playlists' },
 ];
+
+type ScriptMode = 'both' | 'te' | 'en';
 
 export default function VidhanamScreen() {
   const { t, language } = useI18n();
@@ -38,7 +42,8 @@ export default function VidhanamScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['instructions', 'playlists']));
+  const [scriptMode, setScriptMode] = useState<ScriptMode>('both');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['instructions', 'bhojana_mantras', 'playlists']));
 
   const toggleSection = (id: string) => {
     setExpandedSections((prev) => {
@@ -105,6 +110,34 @@ export default function VidhanamScreen() {
           )}
         </View>
 
+        {/* Script Display Mode Toggle (Both / Telugu / English) */}
+        <View style={styles.scriptToggleRow}>
+          {(
+            [
+              { id: 'both', label: language === 'te' ? 'రెండూ (తెలుగు + EN)' : 'Both (EN + తెలుగు)' },
+              { id: 'te', label: 'తెలుగు మాత్రమే' },
+              { id: 'en', label: 'English Only' },
+            ] as const
+          ).map((mode) => {
+            const active = scriptMode === mode.id;
+            return (
+              <TouchableOpacity
+                key={mode.id}
+                onPress={() => setScriptMode(mode.id)}
+                style={[
+                  styles.scriptChip,
+                  { borderColor: colors.border, backgroundColor: colors.surface },
+                  active && { borderColor: colors.primary, backgroundColor: `${colors.primary}22` },
+                ]}
+              >
+                <Text style={[styles.scriptChipText, { color: active ? colors.primary : colors.textMuted }]}>
+                  {mode.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Category Filters */}
         <View style={styles.filtersWrapper}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -160,13 +193,17 @@ export default function VidhanamScreen() {
                   <View style={styles.mantraList}>
                     {sec.mantras.map((m, idx) => (
                       <View key={idx} style={[styles.mantraBox, { borderTopColor: colors.border }]}>
-                        <Text style={[styles.mantraTelugu, { color: colors.text }]}>{m.telugu}</Text>
-                        {m.english && (
-                          <Text style={[styles.mantraEnglish, { color: colors.textMuted }]}>{m.english}</Text>
+                        {scriptMode !== 'en' && (
+                          <Text style={[styles.mantraTelugu, { color: colors.text }]}>{m.telugu}</Text>
                         )}
-                        {m.meaning && (
+                        {scriptMode !== 'te' && m.english && (
+                          <Text style={[styles.mantraEnglish, { color: scriptMode === 'en' ? colors.text : colors.textMuted }]}>
+                            {m.english}
+                          </Text>
+                        )}
+                        {(m.meaningTe || m.meaning) && (
                           <Text style={[styles.mantraMeaning, { color: colors.textDim }]}>
-                            💡 {m.meaning}
+                            💡 {language === 'te' ? (m.meaningTe ?? m.meaning) : m.meaning}
                           </Text>
                         )}
                       </View>
@@ -243,6 +280,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 14 },
+  scriptToggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  scriptChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  scriptChipText: { fontSize: 12, fontWeight: '700' },
   filtersWrapper: { height: 52, minHeight: 52, flexShrink: 0, zIndex: 10, marginVertical: 4 },
   filterRow: { gap: 8, alignItems: 'center' },
   filterChip: {

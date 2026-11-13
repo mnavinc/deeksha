@@ -4,10 +4,11 @@ import { env } from './config.js';
 // Enterprise connection pool configuration
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30_000,
+  max: env.POOL_MAX,
+  idleTimeoutMillis: env.POOL_IDLE_TIMEOUT_MS,
   connectionTimeoutMillis: 5_000,
   statement_timeout: 10_000,
+  allowExitOnIdle: env.NODE_ENV === 'test',
   ssl:
     env.NODE_ENV === 'production' || env.DATABASE_SSL === 'true'
       ? { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED }

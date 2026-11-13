@@ -38,9 +38,15 @@ const expenseInputSchema = z
 export async function groupRoutes(app: FastifyInstance) {
   /**
    * GET /v1/groups
-   * Lists pilgrimage groups the authenticated user belongs to
+   * Lists pilgrimage groups the authenticated user belongs to (with pagination)
    */
   app.get('/v1/groups', { onRequest: [app.authenticate] }, async (request) => {
+    const querySchema = z.object({
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      offset: z.coerce.number().int().min(0).default(0),
+    });
+    const { limit, offset } = querySchema.parse(request.query ?? {});
+
     return withUser(request.user.sub, async (db) => {
       const result = await db.query(
         `SELECT g.*, json_agg(
@@ -54,7 +60,9 @@ export async function groupRoutes(app: FastifyInstance) {
          JOIN group_members m ON m.group_id = g.id
          JOIN users u ON u.id = m.user_id
          GROUP BY g.id
-         ORDER BY g.created_at DESC`
+         ORDER BY g.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
       );
       return result.rows;
     });
@@ -116,13 +124,15 @@ export async function groupRoutes(app: FastifyInstance) {
         ]
       );
 
-      for (const participant of body.participants) {
-        await db.query(
-          `INSERT INTO expense_participants (expense_id, user_id, share_paise)
-           VALUES ($1, $2, $3)`,
-          [expense.id, participant.userId, participant.sharePaise]
-        );
-      }
+      // Batch insert all participants in a single round-trip (avoids N+1 queries)
+      const participantUserIds = body.participants.map((p) => p.userId);
+      const participantShares = body.participants.map((p) => p.sharePaise);
+      await db.query(
+        `INSERT INTO expense_participants (expense_id, user_id, share_paise)
+         SELECT $1, u_id, share
+         FROM UNNEST($2::uuid[], $3::int[]) AS t(u_id, share)`,
+        [expense.id, participantUserIds, participantShares]
+      );
 
       await db.query(
         `INSERT INTO audit_events (actor_user_id, entity_type, entity_id, action, after_value)

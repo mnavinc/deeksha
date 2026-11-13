@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { getLocales } from 'expo-localization';
 import { useAppStore, useHasHydrated } from '@/store/useAppStore';
-import { getDeekshaType } from '@/data/deekshaTypes';
 import { colors, spacing } from '@/theme/colors';
+import { SacredIcon } from '@/components/SacredIcons';
 
 function getDeviceLanguage(): 'te' | 'en' {
   try {
@@ -35,18 +35,16 @@ export default function IndexScreen() {
   const hasHydrated = useHasHydrated();
   const profile = useAppStore((s) => s.profile);
   const enrollment = useAppStore((s) => s.enrollment);
-  const setProfile = useAppStore((s) => s.setProfile);
-  const setLanguage = useAppStore((s) => s.setLanguage);
 
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.9)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(0.9));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       Animated.spring(scale, { toValue: 1, friction: 6, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
-  }, []);
+  }, [opacity, scale]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -86,7 +84,7 @@ export default function IndexScreen() {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.inner, { opacity, transform: [{ scale }] }]}>
-        <Text style={styles.temple}>🛕</Text>
+        <SacredIcon name="temple" size={76} withBadge />
         <Text style={styles.saranam}>{saranam}</Text>
         <Text style={styles.title}>Deeksha Journey</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>

@@ -13,6 +13,7 @@ import type { DailyCheckpointId } from '@/data/journeyCheckpoints';
 import { calculateTotalPoints, buildAchievementStats, getUnlockedAchievements } from '@/engines/gamificationEngine';
 import type { Expense, Settlement } from '@/engines/expenseEngine';
 import { getSwamiTier } from '@/data/swamiNames';
+import { ApiClient } from '@/services/api';
 
 export interface GroupMember {
   userId: string;
@@ -41,6 +42,8 @@ export interface UserProfile {
 }
 
 interface AppState {
+  authToken: string | null;
+  backendEnrollmentId: string | null;
   profile: UserProfile | null;
   enrollment: DeekshaEnrollment | null;
   journeyHistory: DeekshaEnrollment[];
@@ -57,6 +60,8 @@ interface AppState {
 
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   toggleNotifications: () => void;
+  setAuth: (token: string, profile: UserProfile) => void;
+  hydrateFromBackend: () => Promise<boolean>;
   signOut: () => void;
 
   setProfile: (profile: UserProfile) => void;
@@ -94,9 +99,24 @@ function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function syncLogIfAuthenticated(authToken: string | null, enrollmentId: string | null, log: DailyLog) {
+  if (!authToken || !enrollmentId) return;
+  new ApiClient(authToken)
+    .saveDailyLog(enrollmentId, {
+      logDate: log.date,
+      checkpoints: log.checkpoints,
+      walkingKm: log.walkingKm,
+      saranamCount: log.saranamCount,
+      notes: log.notes,
+    })
+    .catch(() => {});
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      authToken: null,
+      backendEnrollmentId: null,
       profile: null,
       enrollment: null,
       journeyHistory: [],
@@ -114,8 +134,85 @@ export const useAppStore = create<AppState>()(
 
       setTheme: (theme) => set({ theme }),
       toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
+      setAuth: (token, profile) => set({ authToken: token, profile }),
+      hydrateFromBackend: async () => {
+        const { authToken } = get();
+        if (!authToken) return false;
+        const client = new ApiClient(authToken);
+        let hasActiveEnrollment = false;
+
+        try {
+          const [me, active, remoteGroups] = await Promise.all([
+            client.getMe().catch(() => null),
+            client.getActiveEnrollment().catch(() => null),
+            client.getGroups().catch(() => null),
+          ]);
+
+          if (me) {
+            const current = get().profile;
+            set({
+              profile: {
+                id: me.id,
+                name: me.display_name || current?.name || 'Swami',
+                language: me.language ?? current?.language ?? 'te',
+                pilgrimageCount: current?.pilgrimageCount ?? 1,
+                onboardingComplete: Boolean(active) || Boolean(current?.onboardingComplete),
+              },
+            });
+          }
+
+          if (active && active.id) {
+            hasActiveEnrollment = true;
+            const remoteLogs = await client.getEnrollmentLogs(active.id).catch(() => []);
+            const dailyLogs: DailyLog[] = remoteLogs.map((l, idx) => ({
+              date: String(l.log_date).slice(0, 10),
+              dayNumber: idx + 1,
+              checkpoints: l.checkpoints as Record<DailyCheckpointId, boolean>,
+              walkingKm: Number(l.walking_km ?? 0),
+              saranamCount: Number(l.saranam_count ?? 0),
+              notes: l.notes ?? undefined,
+            }));
+
+            const hydratedEnrollment: DeekshaEnrollment = {
+              id: active.id,
+              deekshaId: active.deeksha_type_id as DeekshaId,
+              pilgrimageCenter: active.deeksha_type_id === 'ayyappa' ? 'Sabarimala' : active.deeksha_type_id,
+              malaDharanamDate: String(active.mala_dharanam_date).slice(0, 10),
+              durationDays: active.duration_days,
+              targetYatraDate: active.target_yatra_date ? String(active.target_yatra_date).slice(0, 10) : undefined,
+              pilgrimageCount: active.pilgrimage_count ?? 1,
+              status: active.status === 'COMPLETED' ? 'completed' : 'active',
+              dailyLogs,
+              unlockedJourneyIds: ['mala_dharanam'],
+            };
+            set({ enrollment: hydratedEnrollment, backendEnrollmentId: active.id });
+            get().refreshGamification();
+          }
+
+          if (Array.isArray(remoteGroups) && remoteGroups.length > 0) {
+            set({
+              groups: remoteGroups.map((g) => ({
+                id: g.id,
+                name: g.name,
+                season: g.season,
+                route: g.route ?? undefined,
+                members: g.members ?? [],
+                announcements: [],
+                messages: [],
+                guruApprovalCount: 0,
+              })),
+            });
+          }
+        } catch {
+          // Offline-first: keep local state if backend is unreachable
+        }
+
+        return hasActiveEnrollment;
+      },
       signOut: () => {
         set({
+          authToken: null,
+          backendEnrollmentId: null,
           profile: null,
           enrollment: null,
           journeyHistory: [],
@@ -178,6 +275,22 @@ export const useAppStore = create<AppState>()(
         };
         set({ enrollment });
         get().refreshGamification();
+
+        const { authToken } = get();
+        if (authToken) {
+          new ApiClient(authToken)
+            .createEnrollment({
+              deekshaTypeId: params.deekshaId,
+              malaDharanamDate: params.malaDharanamDate.slice(0, 10),
+              durationDays: params.durationDays,
+              targetYatraDate: params.targetYatraDate?.slice(0, 10),
+              pilgrimageCount: Math.max(1, params.pilgrimageCount),
+            })
+            .then((remote) => {
+              if (remote?.id) set({ backendEnrollmentId: remote.id });
+            })
+            .catch(() => {});
+        }
       },
 
       getTodayLog: () => {
@@ -212,6 +325,7 @@ export const useAppStore = create<AppState>()(
           enrollment: { ...enrollment, dailyLogs: [...logs, updated] },
         });
         get().refreshGamification();
+        syncLogIfAuthenticated(get().authToken, get().backendEnrollmentId, updated);
       },
 
       updateWalking: (km) => {
@@ -223,6 +337,7 @@ export const useAppStore = create<AppState>()(
         const logs = enrollment.dailyLogs.filter((l) => l.date !== log.date);
         set({ enrollment: { ...enrollment, dailyLogs: [...logs, updated] } });
         get().refreshGamification();
+        syncLogIfAuthenticated(get().authToken, get().backendEnrollmentId, updated);
       },
 
       incrementSaranam: (count = 1) => {
@@ -238,6 +353,7 @@ export const useAppStore = create<AppState>()(
         const logs = enrollment.dailyLogs.filter((l) => l.date !== log.date);
         set({ enrollment: { ...enrollment, dailyLogs: [...logs, updated] } });
         get().refreshGamification();
+        syncLogIfAuthenticated(get().authToken, get().backendEnrollmentId, updated);
       },
 
       unlockJourneyCheckpoint: (checkpointId) => {
@@ -368,10 +484,10 @@ export const useAppStore = create<AppState>()(
 
 /** Returns true once Zustand has finished hydrating from AsyncStorage */
 export function useHasHydrated() {
-  const [hydrated, setHydrated] = useState(useAppStore.persist.hasHydrated());
+  const [hydrated, setHydrated] = useState(() => useAppStore.persist.hasHydrated());
   useEffect(() => {
+    if (useAppStore.persist.hasHydrated()) return;
     const unsub = useAppStore.persist.onFinishHydration(() => setHydrated(true));
-    setHydrated(useAppStore.persist.hasHydrated());
     return unsub;
   }, []);
   return hydrated;

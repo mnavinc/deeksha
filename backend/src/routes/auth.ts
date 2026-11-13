@@ -7,6 +7,7 @@
 import { randomInt } from 'node:crypto';
 import { type FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { env } from '../config.js';
 import { pool } from '../db.js';
 import { sendOtpEmail } from '../emailService.js';
 
@@ -48,6 +49,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const otp = generateOtp();
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
+      // Opportunistically purge stale expired OTPs (>24h old) to keep table lean
+      await pool.query(
+        `DELETE FROM email_otp_codes WHERE expires_at < now() - interval '1 day'`
+      );
+
       // Invalidate any existing unused OTPs for this identifier
       await pool.query(
         `UPDATE email_otp_codes SET is_verified = true WHERE identifier = $1 AND is_verified = false`,
@@ -72,11 +78,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       request.log.info({ identifier, emailSent }, '[Auth] OTP sent');
 
+      const isDevMock = env.NODE_ENV === 'development' && (!env.SMTP_USER || !env.SMTP_PASS);
+      if (isDevMock) {
+        request.log.info({ identifier, otp }, '[Auth DEV] Generated OTP (SMTP not configured)');
+      }
+
       return reply.status(200).send({
         ok: true,
         message: emailSent
           ? `OTP sent to ${identifier}. Check your inbox (also spam folder).`
           : `OTP generated. Email delivery pending — check inbox or try again.`,
+        ...(isDevMock ? { devOtp: otp } : {}),
       });
     }
   );

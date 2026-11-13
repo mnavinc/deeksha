@@ -76,6 +76,43 @@ export async function enrollmentRoutes(app: FastifyInstance) {
   });
 
   /**
+   * GET /v1/enrollments/:id/logs
+   * Retrieves daily logs for an enrollment owned by the authenticated user
+   */
+  app.get('/v1/enrollments/:id/logs', { onRequest: [app.authenticate] }, async (request) => {
+    const id = z.string().uuid().parse((request.params as { id: string }).id);
+    return withUser(request.user.sub, async (db) => {
+      const result = await db.query(
+        `SELECT dl.log_date, dl.checkpoints, dl.walking_km, dl.saranam_count, dl.notes, dl.version
+         FROM daily_logs dl
+         JOIN deeksha_enrollments e ON e.id = dl.enrollment_id
+         WHERE dl.enrollment_id = $1 AND e.user_id = $2
+         ORDER BY dl.log_date ASC`,
+        [id, request.user.sub]
+      );
+      return result.rows;
+    });
+  });
+
+  /**
+   * PATCH /v1/enrollments/:id/complete
+   * Marks an active enrollment as COMPLETED
+   */
+  app.patch('/v1/enrollments/:id/complete', { onRequest: [app.authenticate] }, async (request) => {
+    const id = z.string().uuid().parse((request.params as { id: string }).id);
+    return withUser(request.user.sub, async (db) =>
+      one(
+        db,
+        `UPDATE deeksha_enrollments
+         SET status = 'COMPLETED', completed_at = now()
+         WHERE id = $1 AND user_id = $2
+         RETURNING *`,
+        [id, request.user.sub]
+      )
+    );
+  });
+
+  /**
    * PUT /v1/enrollments/:id/logs
    * Upserts a daily check-in log with optimistic concurrency support
    */

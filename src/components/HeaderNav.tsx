@@ -18,6 +18,7 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
 import { getSwamiTier } from '@/data/swamiNames';
+import { SacredIcon } from '@/components/SacredIcons';
 
 export function HeaderNav() {
   const { t, language } = useI18n();
@@ -44,7 +45,7 @@ export function HeaderNav() {
     { label: t('journey'), route: '/(tabs)/journey' as any, icon: 'trail-sign-outline' },
     { label: t('poojaVidhanamTitle'), route: '/(tabs)/vidhanam' as any, icon: 'book-outline' },
     { label: t('groups'), route: '/(tabs)/groups' as any, icon: 'people-outline' },
-    { label: t('guide'), route: '/guide' as any, icon: 'book-open-outline' },
+    { label: t('guide'), route: '/guide' as any, icon: 'compass-outline' },
     { label: t('poojaStore'), route: '/store' as any, icon: 'bag-handle-outline' },
     { label: t('donations'), route: '/donations' as any, icon: 'heart-outline' },
     { label: t('community'), route: '/(tabs)/community' as any, icon: 'people-circle-outline' },
@@ -93,7 +94,7 @@ export function HeaderNav() {
       >
         {/* Branding Logo */}
         <TouchableOpacity style={styles.brandRow} onPress={() => router.push('/(tabs)')}>
-          <Text style={styles.brandSymbol}>🛕</Text>
+          <SacredIcon name="temple" size={28} withBadge />
           <View>
             <Text style={[styles.brandTitle, { color: colors.text }]}>Deeksha Journey</Text>
             <Text style={[styles.brandSaranam, { color: colors.primary }]}>{t('saranam')}</Text>
