@@ -18,6 +18,7 @@ import { enrollmentRoutes } from './routes/enrollments.js';
 import { groupRoutes } from './routes/groups.js';
 import { communityRoutes } from './routes/community.js';
 import { authRoutes } from './routes/auth.js';
+import { notificationRoutes } from './routes/notifications.js';
 
 export function corsOriginHandler(
   origin: string | undefined,
@@ -234,6 +235,7 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
   await app.register(groupRoutes);
   await app.register(communityRoutes);
   await app.register(authRoutes);
+  await app.register(notificationRoutes);
 
   return app;
 }

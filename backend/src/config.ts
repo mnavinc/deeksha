@@ -82,6 +82,11 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('DeekshaOrg <noreply@deeksha.app>'),
+
+  // Redis / BullMQ Background Worker & Push Notifications
+  REDIS_URL: z.string().optional(),
+  BULLMQ_PREFIX: z.string().default('swamiseva'),
+  EXPO_ACCESS_TOKEN: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

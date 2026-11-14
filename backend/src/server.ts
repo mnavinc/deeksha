@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { buildApp, corsOriginHandler } from './app.js';
 import { env } from './config.js';
 import { pool, withUser } from './db.js';
+import {
+  attachNotificationSocketIO,
+  closeNotificationWorker,
+  enqueueNotification,
+  initNotificationWorker,
+} from './workers/notificationWorker.js';
 
 export const app = await buildApp();
 
@@ -28,6 +34,11 @@ io.use(async (socket, next) => {
 
 // Socket.IO realtime group rooms and messaging
 io.on('connection', (socket) => {
+  const authedUserId = socket.data.user?.sub as string | undefined;
+  if (authedUserId) {
+    socket.join(`user:${authedUserId}`);
+  }
+
   socket.on(
     'group:join',
     async (groupId: string, ack: (result: { ok: boolean }) => void) => {
@@ -84,6 +95,20 @@ io.on('connection', (socket) => {
           ).rows[0];
         });
         io.to(`group:${input.groupId}`).emit('group:message', message);
+        if (input.type === 'ANNOUNCEMENT') {
+          const members = await pool.query<{ user_id: string }>(
+            'SELECT user_id FROM group_members WHERE group_id = $1 AND user_id <> $2',
+            [input.groupId, userId]
+          );
+          const targetUserIds = members.rows.map((r) => r.user_id);
+          if (targetUserIds.length > 0) {
+            void enqueueNotification({
+              targetUserIds,
+              actionType: 'group_announcement',
+              data: { groupId: input.groupId, message: input.body },
+            });
+          }
+        }
         ack({ ok: true, message });
       } catch {
         ack({ ok: false });
@@ -99,6 +124,7 @@ export const gracefulShutdown = async (signal: string) => {
   isShuttingDown = true;
   app.log.info(`Received ${signal}. Initiating graceful shutdown...`);
   try {
+    await closeNotificationWorker();
     io.close();
     await app.close();
     await pool.end();
@@ -115,6 +141,13 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 export const start = async () => {
   try {
+    attachNotificationSocketIO(io);
+    const workerStatus = await initNotificationWorker();
+    if (workerStatus.enabled) {
+      app.log.info('📬 BullMQ notification worker initialized with time & action queues.');
+    } else {
+      app.log.info('ℹ️ BullMQ notification worker disabled (REDIS_URL not configured).');
+    }
     const address = await app.listen({ port: env.PORT, host: '0.0.0.0' });
     app.log.info(`🚀 Enterprise Fastify server listening on ${address}`);
     return address;
