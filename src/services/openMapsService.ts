@@ -6,6 +6,14 @@ export interface OsmTemple extends Temple {
   source: 'osm' | 'curated';
 }
 
+export interface OsmPlaceSuggestion {
+  id: string;
+  name: string;
+  displayName: string;
+  latitude: number;
+  longitude: number;
+}
+
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -103,5 +111,73 @@ export async function fetchNearbyTemplesOSM(
     return merged.slice(0, 35);
   } catch {
     return curatedFallback;
+  }
+}
+
+/**
+ * Autocomplete location suggestions using OpenStreetMap Nominatim.
+ * Falls back to matching curated sacred/temple locations when offline.
+ */
+export async function searchPlaceSuggestionsOSM(
+  query: string,
+  limit = 6
+): Promise<OsmPlaceSuggestion[]> {
+  const clean = query.trim();
+  if (clean.length < 2) return [];
+
+  const curatedMatches: OsmPlaceSuggestion[] = getNearbyTemples(9.4321, 77.0839, 5000)
+    .filter(
+      (t) =>
+        t.name.toLowerCase().includes(clean.toLowerCase()) ||
+        t.address.toLowerCase().includes(clean.toLowerCase()) ||
+        t.district.toLowerCase().includes(clean.toLowerCase())
+    )
+    .slice(0, limit)
+    .map((t) => ({
+      id: `curated-${t.id}`,
+      name: t.name,
+      displayName: `${t.name}, ${t.district}, ${t.state}`,
+      latitude: t.latitude,
+      longitude: t.longitude,
+    }));
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(clean)}&limit=${limit}&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return curatedMatches;
+
+    const rows = (await res.json()) as Array<{
+      place_id: number;
+      name?: string;
+      display_name: string;
+      lat: string;
+      lon: string;
+    }>;
+
+    const osmSuggestions: OsmPlaceSuggestion[] = rows
+      .map((row) => {
+        const latitude = parseFloat(row.lat);
+        const longitude = parseFloat(row.lon);
+        if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
+        const shortName = row.name?.trim() || row.display_name.split(',')[0]?.trim() || clean;
+        return {
+          id: `nom-${row.place_id}`,
+          name: shortName,
+          displayName: row.display_name,
+          latitude,
+          longitude,
+        };
+      })
+      .filter((item): item is OsmPlaceSuggestion => item !== null);
+
+    return osmSuggestions.length > 0 ? osmSuggestions : curatedMatches;
+  } catch {
+    return curatedMatches;
   }
 }

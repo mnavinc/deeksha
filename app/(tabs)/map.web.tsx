@@ -2,11 +2,11 @@
  * map.web.tsx — OpenStreetMap / Leaflet web fallback using responsive iframe,
  * providing a clean, responsive interactive map alternative on web.
  */
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Linking, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DeityFilter, SAMPLE_TEMPLES } from '@/data/temples';
-import { fetchNearbyTemplesOSM, getOpenStreetMapUrl, type OsmTemple } from '@/services/openMapsService';
+import { fetchNearbyTemplesOSM, getOpenStreetMapUrl, searchPlaceSuggestionsOSM, type OsmPlaceSuggestion, type OsmTemple } from '@/services/openMapsService';
 import { useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
@@ -26,6 +26,8 @@ export default function MapScreen() {
   const [filter, setFilter] = useState<DeityFilter | 'All'>('All');
   const [nearby, setNearby] = useState<OsmTemple[] | null>(null);
   const [locating, setLocating] = useState(false);
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<OsmPlaceSuggestion[]>([]);
   const [selectedTemple, setSelectedTemple] = useState<typeof SAMPLE_TEMPLES[0] | OsmTemple | null>(SAMPLE_TEMPLES[0]);
   const saved = useAppStore((s) => s.savedTempleIds);
   const save = useAppStore((s) => s.saveTemple);
@@ -58,6 +60,35 @@ export default function MapScreen() {
     const combined = [...publicSannidhanamTemples, ...base];
     return combined.filter((item) => filter === 'All' || item.deity === filter);
   }, [nearby, publicSannidhanamTemples, filter]);
+
+  useEffect(() => {
+    const clean = placeQuery.trim();
+    if (clean.length < 2) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const res = await searchPlaceSuggestionsOSM(clean, 5);
+      if (!cancelled) setSuggestions(res);
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [placeQuery]);
+
+  const selectSuggestion = async (item: OsmPlaceSuggestion) => {
+    setPlaceQuery(item.name);
+    setSuggestions([]);
+    setLocating(true);
+    const list = await fetchNearbyTemplesOSM(
+      item.latitude,
+      item.longitude,
+      25000,
+      filter === 'All' ? undefined : filter
+    );
+    setNearby(list);
+    if (list.length > 0) setSelectedTemple(list[0]);
+    setLocating(false);
+  };
 
   const locateOpenMaps = async () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
@@ -113,6 +144,49 @@ export default function MapScreen() {
           )}
           <Text style={styles.locateText}>{t('nearby')} (OSM)</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* OpenMaps Location Search & Autocomplete */}
+      <View style={{ paddingHorizontal: spacing.md, paddingBottom: 8 }}>
+        <View style={[styles.osmSearchRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={16} color={colors.textMuted} />
+          <TextInput
+            value={placeQuery}
+            onChangeText={(txt) => {
+              setPlaceQuery(txt);
+              if (txt.trim().length < 2) setSuggestions([]);
+            }}
+            placeholder="Search city or area via OpenMaps..."
+            placeholderTextColor={colors.textDim}
+            style={[styles.osmSearchInput, { color: colors.text }]}
+          />
+          {placeQuery.length > 0 && (
+            <TouchableOpacity onPress={() => { setPlaceQuery(''); setSuggestions([]); }}>
+              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {suggestions.length > 0 && (
+          <View style={[styles.osmDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {suggestions.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                onPress={() => void selectSuggestion(item)}
+                style={[styles.osmDropdownRow, { borderBottomColor: colors.border }]}
+              >
+                <Ionicons name="location-outline" size={15} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1}>
+                    {item.displayName}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Deity Filters */}
@@ -253,6 +327,30 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   locateText: { color: '#0D1117', fontSize: 12, fontWeight: '800' },
+  osmSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  osmSearchInput: { flex: 1, fontSize: 13 },
+  osmDropdown: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  osmDropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+  },
   bodyWrap: { flex: 1 },
   bodyWrapWide: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.md },
   mapContainer: {

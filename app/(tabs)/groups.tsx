@@ -12,6 +12,7 @@ import { QrCodeSvg } from '@/components/QrCodeSvg';
 import { buildSannidhanamInviteUrl, parseSannidhanamInvitePayload } from '@/engines/qrInviteEngine';
 import { calculateSunTimes, getTimelyDeekshaAlert } from '@/utils/solarTimes';
 import { sendProfileCompletionReminderNotification, sendTimelySolarAlertNotification } from '@/utils/notifications';
+import { searchPlaceSuggestionsOSM, type OsmPlaceSuggestion } from '@/services/openMapsService';
 
 export default function GroupsScreen() {
   const groups = useAppStore((s) => s.groups);
@@ -43,6 +44,9 @@ export default function GroupsScreen() {
   const [inviteStatus, setInviteStatus] = useState('');
   const [qrInput, setQrInput] = useState('');
   const [locNameInput, setLocNameInput] = useState('');
+  const [locSuggestions, setLocSuggestions] = useState<OsmPlaceSuggestion[]>([]);
+  const [locSearching, setLocSearching] = useState(false);
+  const [activeSection, setActiveSection] = useState<'overview' | 'invite' | 'location'>('overview');
   const [showProfileGateForm, setShowProfileGateForm] = useState(false);
   const [profileNameInput, setProfileNameInput] = useState(profile?.name && profile.name !== 'Swami' ? profile.name : '');
   const [profilePhoneInput, setProfilePhoneInput] = useState(profile?.phone ?? '');
@@ -51,6 +55,24 @@ export default function GroupsScreen() {
   useEffect(() => {
     pruneEmptySannidhanams();
   }, [pruneEmptySannidhanams]);
+
+  useEffect(() => {
+    const clean = locNameInput.trim();
+    if (clean.length < 2) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLocSearching(true);
+      const results = await searchPlaceSuggestionsOSM(clean, 5);
+      if (!cancelled) {
+        setLocSuggestions(results);
+        setLocSearching(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [locNameInput]);
 
   const profileComplete = isProfileComplete(profile);
   const sunTimes = calculateSunTimes();
@@ -389,7 +411,36 @@ export default function GroupsScreen() {
           </View>
         </View>
 
+        {/* Clean Segmented Section Switcher */}
+        <View style={[styles.sectionTabs, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {[
+            { id: 'overview' as const, label: language === 'te' ? 'సభ్యులు & చాట్' : 'Members & Chat', icon: 'people-outline' as const },
+            { id: 'invite' as const, label: language === 'te' ? 'QR ఆహ్వానం' : 'Invite & Track', icon: 'qr-code-outline' as const },
+            { id: 'location' as const, label: language === 'te' ? 'లొకేషన్ & సేవ' : 'Location & Seva', icon: 'location-outline' as const },
+          ].map((tab) => {
+            const active = activeSection === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveSection(tab.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={[
+                  styles.sectionTabBtn,
+                  active && { backgroundColor: colors.primary },
+                ]}
+              >
+                <Ionicons name={tab.icon} size={15} color={active ? '#0D1117' : colors.textMuted} />
+                <Text style={[styles.sectionTabText, { color: active ? '#0D1117' : colors.textMuted }]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Invite Swamis to Sannidhanam (QR Code + WhatsApp / Telegram / Instagram) */}
+        {activeSection === 'invite' && (
         <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.section, { color: colors.text }]}>
             {language === 'te' ? 'సన్నిధానం QR ఆహ్వానం • QR & Social Invite' : 'Sannidhanam QR & Social Invite'}
@@ -498,8 +549,10 @@ export default function GroupsScreen() {
             </Text>
           </View>
         </View>
+        )}
 
-        {/* Public Sannidhanam Location */}
+        {/* Public Sannidhanam Location with OpenStreetMap Autocomplete */}
+        {activeSection === 'location' && (
         <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
@@ -557,8 +610,14 @@ export default function GroupsScreen() {
           <View style={[styles.addRow, { borderColor: colors.border }]}>
             <TextInput
               value={locNameInput}
-              onChangeText={setLocNameInput}
-              placeholder={group.location?.name ?? (language === 'te' ? 'సన్నిధానం చిరునామా...' : 'Custom Sannidhanam spot name...')}
+              onChangeText={(txt) => {
+                setLocNameInput(txt);
+                if (txt.trim().length < 2) {
+                  setLocSuggestions([]);
+                  setLocSearching(false);
+                }
+              }}
+              placeholder={group.location?.name ?? (language === 'te' ? 'సన్నిధానం స్థలం వెతకండి (OpenMaps)...' : 'Search place via OpenMaps...')}
               placeholderTextColor={colors.textDim}
               style={[styles.memberInput, { color: colors.text }]}
             />
@@ -571,6 +630,7 @@ export default function GroupsScreen() {
                   longitude: group.location?.longitude ?? 77.0839,
                   isPublic: true,
                 });
+                setLocSuggestions([]);
               }}
               accessibilityRole="button"
               accessibilityLabel="Save custom Sannidhanam location"
@@ -579,14 +639,50 @@ export default function GroupsScreen() {
               <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'సేవ్' : 'Save'}</Text>
             </TouchableOpacity>
           </View>
+          {locSearching && (
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>Searching OpenStreetMap...</Text>
+          )}
+          {locSuggestions.length > 0 && (
+            <View style={[styles.suggestionsBox, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              {locSuggestions.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => {
+                    setLocNameInput(item.name);
+                    setGroupPublicLocation(group.id, {
+                      name: item.name,
+                      latitude: item.latitude,
+                      longitude: item.longitude,
+                      isPublic: true,
+                    });
+                    setLocSuggestions([]);
+                  }}
+                  style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
+                >
+                  <Ionicons name="location-outline" size={15} color={colors.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1}>
+                      {item.displayName}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           {group.location?.isPublic && (
             <Text style={[styles.subtitle, { color: colors.success }]}>
               ✓ {language === 'te' ? 'పబ్లిక్‌గా ఉంది:' : 'Public on Map:'} {group.location.name} ({group.location.latitude.toFixed(4)}, {group.location.longitude.toFixed(4)})
             </Text>
           )}
         </View>
+        )}
 
         {/* Guru Swamy Verification & Nomination */}
+        {activeSection === 'overview' && (
+        <>
         <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.row}>
             <View>
@@ -707,8 +803,12 @@ export default function GroupsScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        </>
+        )}
 
         {/* Add Expense */}
+        {activeSection === 'location' && (
+        <>
         <TouchableOpacity style={styles.expense} onPress={() => router.push('/expenses/add')}>
           <Ionicons name="wallet-outline" color={colors.primary} size={22} />
           <View>
@@ -734,6 +834,8 @@ export default function GroupsScreen() {
             <Text style={styles.link}>₹{s.amount.toFixed(0)} · {t('markPaid')}</Text>
           </TouchableOpacity>
         ))}
+        </>
+        )}
       </ScrollView>
     </View>
   );
@@ -743,12 +845,46 @@ const styles = StyleSheet.create({
   page: { flex: 1 },
   content: { padding: spacing.md, gap: 12, paddingBottom: 60 },
   hero: {
-    backgroundColor: '#162A25',
+    backgroundColor: '#0B2D6B',
     borderRadius: 20,
     padding: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  sectionTabs: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 4,
+    gap: 4,
+  },
+  sectionTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  sectionTabText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  suggestionsBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
   },
   heroHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eyebrow: { color: '#F0B429', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },

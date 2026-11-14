@@ -23,14 +23,14 @@ export function getClayStyle(
     };
   }
 
-  // Minimal Light Surface
+  // Minimal Light Surface (Brand-kit Sacred Cream & Divine Blue soft shadow)
   const bg = customBg ?? '#FFFFFF';
   return {
     backgroundColor: bg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: '#ECE4CE',
+    shadowColor: '#0B2D6B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: elevation === 'high' ? 10 : elevation === 'medium' ? 6 : 3,
@@ -43,8 +43,8 @@ export function getClayButtonStyle(
   variant: 'primary' | 'secondary' | 'accent' = 'primary'
 ): ViewStyle {
   const isDark = theme === 'dark';
-  const primaryBg = isDark ? '#F7931E' : '#E07A00';
-  const secondaryBg = isDark ? '#21262D' : '#F1F5F9';
+  const primaryBg = '#F7931E';
+  const secondaryBg = isDark ? '#21262D' : '#FFF8E1';
   const accentBg = '#0B2D6B';
 
   const bg = variant === 'primary' ? primaryBg : variant === 'accent' ? accentBg : secondaryBg;

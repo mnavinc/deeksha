@@ -6,8 +6,8 @@ export const darkColors = {
   surface: '#161B22',
   surfaceElevated: '#21262D',
   border: '#30363D',
-  text: '#F8FAFC',
-  textMuted: '#B0BEC5',
+  text: '#FFF8E1',          // Sacred Cream text on minimal dark
+  textMuted: '#B8C4D4',
   textDim: '#8B949E',
   primary: '#F7931E',       // Swamiseva Saffron
   primaryDark: '#D4AF37',   // Swamiseva Golden
@@ -21,22 +21,22 @@ export const darkColors = {
 };
 
 export const lightColors = {
-  background: '#F8FAFC',
-  surface: '#FFFFFF',
-  surfaceElevated: '#F1F5F9',
-  border: '#E2E8F0',
-  text: '#0F172A',
-  textMuted: '#475569',
-  textDim: '#64748B',
-  primary: '#E07A00',       // Readable Saffron on light
-  primaryDark: '#B45309',
-  onPrimary: '#FFFFFF',
+  background: '#FFFDF7',    // Airy Sacred Cream
+  surface: '#FFFFFF',       // Crisp White cards
+  surfaceElevated: '#FFF8E1', // Sacred Cream
+  border: '#ECE4CE',
+  text: '#0B2D6B',          // Swamiseva Divine Blue
+  textMuted: '#3E5680',
+  textDim: '#6A7FA3',
+  primary: '#F7931E',       // Swamiseva Saffron
+  primaryDark: '#D4AF37',   // Swamiseva Golden
+  onPrimary: '#0D1117',
   success: '#16A34A',
   warning: '#D97706',
   error: '#DC2626',
   ayyappaGold: '#D4AF37',
   ayyappaBlack: '#0B2D6B',
-  accent: '#0B2D6B',        // Swamiseva Divine Blue accent
+  accent: '#2E86EB',        // Swamiseva Sky Blue
 };
 
 
