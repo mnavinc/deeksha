@@ -55,10 +55,7 @@ export default function MapScreen() {
 
   useEffect(() => {
     const clean = placeQuery.trim();
-    if (clean.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    if (clean.length < 2) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       const res = await searchPlaceSuggestionsOSM(clean, 5);
@@ -142,7 +139,10 @@ export default function MapScreen() {
           <Ionicons name="search" size={16} color={colors.textMuted} />
           <TextInput
             value={placeQuery}
-            onChangeText={setPlaceQuery}
+            onChangeText={(txt) => {
+              setPlaceQuery(txt);
+              if (txt.trim().length < 2) setSuggestions([]);
+            }}
             placeholder="Search city or area via OpenMaps..."
             placeholderTextColor={colors.textDim}
             style={styles.osmSearchInput}

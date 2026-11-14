@@ -58,14 +58,10 @@ export default function GroupsScreen() {
 
   useEffect(() => {
     const clean = locNameInput.trim();
-    if (clean.length < 2) {
-      setLocSuggestions([]);
-      setLocSearching(false);
-      return;
-    }
+    if (clean.length < 2) return;
     let cancelled = false;
-    setLocSearching(true);
     const timer = setTimeout(async () => {
+      if (!cancelled) setLocSearching(true);
       const results = await searchPlaceSuggestionsOSM(clean, 5);
       if (!cancelled) {
         setLocSuggestions(results);
