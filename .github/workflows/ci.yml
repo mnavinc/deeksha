@@ -14,6 +14,8 @@ jobs:
   mobile-client-checks:
     name: Mobile & Web Client Verification
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -35,6 +37,9 @@ jobs:
 
       - name: Execute Automated Unit & Integration Tests
         run: npm run test
+
+      - name: Verify Web Production Bundle
+        run: npx expo export -p web
 
   backend-api-checks:
     name: Backend API Verification

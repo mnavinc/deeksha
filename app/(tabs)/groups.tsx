@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, ScrollView, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,10 +58,14 @@ export default function GroupsScreen() {
 
   useEffect(() => {
     const clean = locNameInput.trim();
-    if (clean.length < 2) return;
+    if (clean.length < 2) {
+      setLocSuggestions([]);
+      setLocSearching(false);
+      return;
+    }
     let cancelled = false;
+    setLocSearching(true);
     const timer = setTimeout(async () => {
-      setLocSearching(true);
       const results = await searchPlaceSuggestionsOSM(clean, 5);
       if (!cancelled) {
         setLocSuggestions(results);
@@ -75,7 +79,7 @@ export default function GroupsScreen() {
   }, [locNameInput]);
 
   const profileComplete = isProfileComplete(profile);
-  const sunTimes = calculateSunTimes();
+  const sunTimes = useMemo(() => calculateSunTimes(), []);
   const timelyAlert = getTimelyDeekshaAlert(new Date(), sunTimes, !profileComplete, language);
 
   const handleSaveProfileGate = () => {
@@ -244,7 +248,7 @@ export default function GroupsScreen() {
         }),
     });
     const url = `https://wa.me/?text=${encodeURIComponent(`${inviteText}\n${tracked.url}`)}`;
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(url).catch(() => { });
     setInviteStatus(`Tracked WhatsApp link created (${tracked.trackingId})`);
   };
 
@@ -266,7 +270,7 @@ export default function GroupsScreen() {
         }),
     });
     const url = `https://t.me/share/url?url=${encodeURIComponent(tracked.url)}&text=${encodeURIComponent(inviteText)}`;
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(url).catch(() => { });
     setInviteStatus(`Tracked Telegram link created (${tracked.trackingId})`);
   };
 
@@ -296,10 +300,10 @@ export default function GroupsScreen() {
             ? `ట్రాక్డ్ ఇన్‌స్టాగ్రామ్ లింక్ కాపీ చేయబడింది (${tracked.trackingId})`
             : `Tracked link copied (${tracked.trackingId})! Paste in Instagram DM or Story.`
         );
-      } catch {}
-      Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => {});
+      } catch { }
+      Linking.openURL('https://www.instagram.com/direct/inbox/').catch(() => { });
     } else {
-      await Share.share({ message: fullText, url: tracked.url }).catch(() => {});
+      await Share.share({ message: fullText, url: tracked.url }).catch(() => { });
     }
   };
 
@@ -441,400 +445,401 @@ export default function GroupsScreen() {
 
         {/* Invite Swamis to Sannidhanam (QR Code + WhatsApp / Telegram / Instagram) */}
         {activeSection === 'invite' && (
-        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.section, { color: colors.text }]}>
-            {language === 'te' ? 'సన్నిధానం QR ఆహ్వానం • QR & Social Invite' : 'Sannidhanam QR & Social Invite'}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {language === 'te'
-              ? 'ఈ QR కోడ్ స్కాన్ చేసి మొబైల్/ఇమెయిల్ లేకుండానే సన్నిధానంలో చేరవచ్చు'
-              : 'Scan this safe QR code (no phone/email needed) or share via WhatsApp, Telegram & Instagram'}
-          </Text>
-          <View style={styles.qrCenter}>
-            <QrCodeSvg value={inviteUrl} size={156} />
-            <Text style={[styles.subtitle, { color: colors.textDim, textAlign: 'center', marginTop: 6 }]}>
-              ID: {group.id.slice(0, 14)} · Tag: qr_sannidhanam_invite
-            </Text>
-          </View>
-          <View style={styles.shareRow}>
-            <TouchableOpacity
-              onPress={shareToWhatsApp}
-              accessibilityRole="button"
-              accessibilityLabel="Invite via WhatsApp"
-              style={[styles.shareBtn, { backgroundColor: '#25D3661E', borderColor: '#25D366' }]}
-            >
-              <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-              <Text style={[styles.shareBtnText, { color: '#25D366' }]}>WhatsApp</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={shareToTelegram}
-              accessibilityRole="button"
-              accessibilityLabel="Invite via Telegram"
-              style={[styles.shareBtn, { backgroundColor: '#0088CC1E', borderColor: '#0088CC' }]}
-            >
-              <Ionicons name="paper-plane" size={18} color="#38BDF8" />
-              <Text style={[styles.shareBtnText, { color: '#38BDF8' }]}>Telegram</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={shareToInstagram}
-              accessibilityRole="button"
-              accessibilityLabel="Invite via Instagram"
-              style={[styles.shareBtn, { backgroundColor: '#E1306C1E', borderColor: '#E1306C' }]}
-            >
-              <Ionicons name="logo-instagram" size={18} color="#F472B6" />
-              <Text style={[styles.shareBtnText, { color: '#F472B6' }]}>Instagram</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Paste scanned QR invite URL */}
-          <View style={[styles.addRow, { borderColor: colors.border, marginTop: 6 }]}>
-            <TextInput
-              value={qrInput}
-              onChangeText={setQrInput}
-              placeholder={language === 'te' ? 'QR ఆహ్వాన లింక్ పేస్ట్ చేయండి...' : 'Paste scanned QR invite link...'}
-              placeholderTextColor={colors.textDim}
-              style={[styles.memberInput, { color: colors.text }]}
-            />
-            <TouchableOpacity
-              onPress={handleJoinByQrInput}
-              style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
-            >
-              <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'చేరండి' : 'Join QR'}</Text>
-            </TouchableOpacity>
-          </View>
-          {userActionLogs.length > 0 && (
-            <Text style={[styles.subtitle, { color: colors.primary }]}>
-              ✓ {userActionLogs.length} action log(s) · Latest tag: {userActionLogs[0].eventTags.join(', ')}
-            </Text>
-          )}
-          {inviteStatus ? (
-            <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
-          ) : null}
-
-          {/* Marketing Tracking Link Analytics */}
-          <View style={{ marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderColor: colors.border, gap: 6 }}>
-            <Text style={[styles.subtitle, { color: colors.text, fontWeight: '800' }]}>
-              {language === 'te' ? 'QR మార్కెటింగ్ ట్రాకింగ్' : 'QR Link Marketing & Join Tracking'}
+          <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.section, { color: colors.text }]}>
+              {language === 'te' ? 'సన్నిధానం QR ఆహ్వానం • QR & Social Invite' : 'Sannidhanam QR & Social Invite'}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              Links Shared: {groupTrackingLinks.length} · Joined: {totalTrackedJoined} · Shared Name & Phone: {totalWithProfile}/{totalTrackedJoined}
+              {language === 'te'
+                ? 'ఈ QR కోడ్ స్కాన్ చేసి మొబైల్/ఇమెయిల్ లేకుండానే సన్నిధానంలో చేరవచ్చు'
+                : 'Scan this safe QR code (no phone/email needed) or share via WhatsApp, Telegram & Instagram'}
             </Text>
-            {groupTrackingLinks.slice(0, 4).map((link) => (
-              <View key={link.trackingId} style={{ backgroundColor: colors.background, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.border, gap: 4 }}>
-                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>
-                  [{link.channel.toUpperCase()}] {link.trackingId} · {link.joinedMembers.length} joined
-                </Text>
-                {link.joinedMembers.map((jm) => (
-                  <View key={`${link.trackingId}-${jm.userId}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                    <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1 }}>
-                      • {jm.sharedName ? jm.name : 'Pending Name'} · {jm.sharedPhone ? jm.phone : 'No Phone'} ({jm.pointsAwarded} pts)
-                    </Text>
-                    {(!jm.sharedName || !jm.sharedPhone) && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          void sendProfileCompletionReminderNotification(group.name);
-                          setInviteStatus(`Reminder sent to ${jm.name} to complete Name & Phone.`);
-                        }}
-                      >
-                        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>Remind</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </View>
-            ))}
-            <Text style={[styles.subtitle, { color: colors.textDim, fontSize: 11 }]}>
-              Note: Sannidhanams with 0 members are automatically removed after 30 days.
-            </Text>
-          </View>
-        </View>
-        )}
-
-        {/* Public Sannidhanam Location with OpenStreetMap Autocomplete */}
-        {activeSection === 'location' && (
-        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.section, { color: colors.text }]}>
-                {language === 'te' ? 'పబ్లిక్ సన్నిధానం లొకేషన్' : 'Public Sannidhanam Location'}
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                {language === 'te'
-                  ? 'దీన్ని ఆన్ చేస్తే మ్యాప్ & జర్నీ ట్రైల్ మ్యాప్‌లో చూపబడుతుంది'
-                  : 'Visible on Temples Map & Journey Trail Map for easy meetup'}
+            <View style={styles.qrCenter}>
+              <QrCodeSvg value={inviteUrl} size={156} />
+              <Text style={[styles.subtitle, { color: colors.textDim, textAlign: 'center', marginTop: 6 }]}>
+                ID: {group.id.slice(0, 14)} · Tag: qr_sannidhanam_invite
               </Text>
             </View>
-            <Switch
-              value={Boolean(group.location?.isPublic)}
-              onValueChange={(next) => {
-                const current = group.location ?? {
-                  name: locNameInput.trim() || 'Sabarimala Sannidhanam',
-                  latitude: 9.4321,
-                  longitude: 77.0839,
-                  isPublic: next,
-                };
-                setGroupPublicLocation(group.id, { ...current, isPublic: next });
-              }}
-              trackColor={{ false: colors.border, true: `${colors.primary}66` }}
-              thumbColor={group.location?.isPublic ? colors.primary : colors.textDim}
-              accessibilityLabel="Toggle public Sannidhanam location visibility"
-            />
-          </View>
-          <View style={styles.shareRow}>
-            {[
-              { label: 'Sabarimala', name: 'Sabarimala Sannidhanam', latitude: 9.4321, longitude: 77.0839 },
-              { label: 'Pamba', name: 'Pamba Ganapathi', latitude: 9.4106, longitude: 77.0715 },
-              { label: 'Erumeli', name: 'Erumeli Sannidhanam', latitude: 9.4792, longitude: 76.8439 },
-            ].map((preset) => (
+            <View style={styles.shareRow}>
               <TouchableOpacity
-                key={preset.label}
-                onPress={() => {
-                  setLocNameInput(preset.name);
-                  setGroupPublicLocation(group.id, {
-                    name: preset.name,
-                    latitude: preset.latitude,
-                    longitude: preset.longitude,
-                    isPublic: true,
-                  });
-                }}
+                onPress={shareToWhatsApp}
                 accessibilityRole="button"
-                accessibilityLabel={`Set Sannidhanam location to ${preset.name}`}
-                style={[styles.shareBtn, { borderColor: colors.border, backgroundColor: `${colors.primary}12` }]}
+                accessibilityLabel="Invite via WhatsApp"
+                style={[styles.shareBtn, { backgroundColor: '#25D3661E', borderColor: '#25D366' }]}
               >
-                <Ionicons name="location-outline" size={14} color={colors.primary} />
-                <Text style={[styles.shareBtnText, { color: colors.primary }]}>{preset.label}</Text>
+                <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                <Text style={[styles.shareBtnText, { color: '#25D366' }]}>WhatsApp</Text>
               </TouchableOpacity>
-            ))}
+
+              <TouchableOpacity
+                onPress={shareToTelegram}
+                accessibilityRole="button"
+                accessibilityLabel="Invite via Telegram"
+                style={[styles.shareBtn, { backgroundColor: '#0088CC1E', borderColor: '#0088CC' }]}
+              >
+                <Ionicons name="paper-plane" size={18} color="#38BDF8" />
+                <Text style={[styles.shareBtnText, { color: '#38BDF8' }]}>Telegram</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={shareToInstagram}
+                accessibilityRole="button"
+                accessibilityLabel="Invite via Instagram"
+                style={[styles.shareBtn, { backgroundColor: '#E1306C1E', borderColor: '#E1306C' }]}
+              >
+                <Ionicons name="logo-instagram" size={18} color="#F472B6" />
+                <Text style={[styles.shareBtnText, { color: '#F472B6' }]}>Instagram</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Paste scanned QR invite URL */}
+            <View style={[styles.addRow, { borderColor: colors.border, marginTop: 6 }]}>
+              <TextInput
+                value={qrInput}
+                onChangeText={setQrInput}
+                placeholder={language === 'te' ? 'QR ఆహ్వాన లింక్ పేస్ట్ చేయండి...' : 'Paste scanned QR invite link...'}
+                placeholderTextColor={colors.textDim}
+                style={[styles.memberInput, { color: colors.text }]}
+              />
+              <TouchableOpacity
+                onPress={handleJoinByQrInput}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+              >
+                <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'చేరండి' : 'Join QR'}</Text>
+              </TouchableOpacity>
+            </View>
+            {userActionLogs.length > 0 && (
+              <Text style={[styles.subtitle, { color: colors.primary }]}>
+                ✓ {userActionLogs.length} action log(s) · Latest tag: {userActionLogs[0].eventTags.join(', ')}
+              </Text>
+            )}
+            {inviteStatus ? (
+              <Text style={[styles.subtitle, { color: colors.success, marginTop: 4 }]}>{inviteStatus}</Text>
+            ) : null}
+
+            {/* Marketing Tracking Link Analytics */}
+            <View style={{ marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderColor: colors.border, gap: 6 }}>
+              <Text style={[styles.subtitle, { color: colors.text, fontWeight: '800' }]}>
+                {language === 'te' ? 'QR మార్కెటింగ్ ట్రాకింగ్' : 'QR Link Marketing & Join Tracking'}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                Links Shared: {groupTrackingLinks.length} · Joined: {totalTrackedJoined} · Shared Name & Phone: {totalWithProfile}/{totalTrackedJoined}
+              </Text>
+              {groupTrackingLinks.slice(0, 4).map((link) => (
+                <View key={link.trackingId} style={{ backgroundColor: colors.background, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.border, gap: 4 }}>
+                  <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>
+                    [{link.channel.toUpperCase()}] {link.trackingId} · {link.joinedMembers.length} joined
+                  </Text>
+                  {link.joinedMembers.map((jm) => (
+                    <View key={`${link.trackingId}-${jm.userId}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1 }}>
+                        • {jm.sharedName ? jm.name : 'Pending Name'} · {jm.sharedPhone ? jm.phone : 'No Phone'} ({jm.pointsAwarded} pts)
+                      </Text>
+                      {(!jm.sharedName || !jm.sharedPhone) && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            void sendProfileCompletionReminderNotification(group.name);
+                            setInviteStatus(`Reminder sent to ${jm.name} to complete Name & Phone.`);
+                          }}
+                        >
+                          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>Remind</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ))}
+              <Text style={[styles.subtitle, { color: colors.textDim, fontSize: 11 }]}>
+                Note: Sannidhanams with 0 members are automatically removed after 30 days.
+              </Text>
+            </View>
           </View>
-          <View style={[styles.addRow, { borderColor: colors.border }]}>
-            <TextInput
-              value={locNameInput}
-              onChangeText={(txt) => {
-                setLocNameInput(txt);
-                if (txt.trim().length < 2) {
-                  setLocSuggestions([]);
-                  setLocSearching(false);
-                }
-              }}
-              placeholder={group.location?.name ?? (language === 'te' ? 'సన్నిధానం స్థలం వెతకండి (OpenMaps)...' : 'Search place via OpenMaps...')}
-              placeholderTextColor={colors.textDim}
-              style={[styles.memberInput, { color: colors.text }]}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                const name = locNameInput.trim() || group.location?.name || 'Sabarimala Sannidhanam';
-                setGroupPublicLocation(group.id, {
-                  name,
-                  latitude: group.location?.latitude ?? 9.4321,
-                  longitude: group.location?.longitude ?? 77.0839,
-                  isPublic: true,
-                });
-                setLocSuggestions([]);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Save custom Sannidhanam location"
-              style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
-            >
-              <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'సేవ్' : 'Save'}</Text>
-            </TouchableOpacity>
-          </View>
-          {locSearching && (
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>Searching OpenStreetMap...</Text>
-          )}
-          {locSuggestions.length > 0 && (
-            <View style={[styles.suggestionsBox, { borderColor: colors.border, backgroundColor: colors.background }]}>
-              {locSuggestions.map((item) => (
+        )}
+
+        {/* Public Sannidhanam Location */}
+        {/* Public Sannidhanam Location with OpenStreetMap Autocomplete */}
+        {activeSection === 'location' && (
+          <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.section, { color: colors.text }]}>
+                  {language === 'te' ? 'పబ్లిక్ సన్నిధానం లొకేషన్' : 'Public Sannidhanam Location'}
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                  {language === 'te'
+                    ? 'దీన్ని ఆన్ చేస్తే మ్యాప్ & జర్నీ ట్రైల్ మ్యాప్‌లో చూపబడుతుంది'
+                    : 'Visible on Temples Map & Journey Trail Map for easy meetup'}
+                </Text>
+              </View>
+              <Switch
+                value={Boolean(group.location?.isPublic)}
+                onValueChange={(next) => {
+                  const current = group.location ?? {
+                    name: locNameInput.trim() || 'Sabarimala Sannidhanam',
+                    latitude: 9.4321,
+                    longitude: 77.0839,
+                    isPublic: next,
+                  };
+                  setGroupPublicLocation(group.id, { ...current, isPublic: next });
+                }}
+                trackColor={{ false: colors.border, true: `${colors.primary}66` }}
+                thumbColor={group.location?.isPublic ? colors.primary : colors.textDim}
+                accessibilityLabel="Toggle public Sannidhanam location visibility"
+              />
+            </View>
+            <View style={styles.shareRow}>
+              {[
+                { label: 'Sabarimala', name: 'Sabarimala Sannidhanam', latitude: 9.4321, longitude: 77.0839 },
+                { label: 'Pamba', name: 'Pamba Ganapathi', latitude: 9.4106, longitude: 77.0715 },
+                { label: 'Erumeli', name: 'Erumeli Sannidhanam', latitude: 9.4792, longitude: 76.8439 },
+              ].map((preset) => (
                 <TouchableOpacity
-                  key={item.id}
+                  key={preset.label}
                   onPress={() => {
-                    setLocNameInput(item.name);
+                    setLocNameInput(preset.name);
                     setGroupPublicLocation(group.id, {
-                      name: item.name,
-                      latitude: item.latitude,
-                      longitude: item.longitude,
+                      name: preset.name,
+                      latitude: preset.latitude,
+                      longitude: preset.longitude,
                       isPublic: true,
                     });
-                    setLocSuggestions([]);
                   }}
-                  style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set Sannidhanam location to ${preset.name}`}
+                  style={[styles.shareBtn, { borderColor: colors.border, backgroundColor: `${colors.primary}12` }]}
                 >
-                  <Ionicons name="location-outline" size={15} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1}>
-                      {item.displayName}
-                    </Text>
-                  </View>
+                  <Ionicons name="location-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.shareBtnText, { color: colors.primary }]}>{preset.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-          )}
-          {group.location?.isPublic && (
-            <Text style={[styles.subtitle, { color: colors.success }]}>
-              ✓ {language === 'te' ? 'పబ్లిక్‌గా ఉంది:' : 'Public on Map:'} {group.location.name} ({group.location.latitude.toFixed(4)}, {group.location.longitude.toFixed(4)})
-            </Text>
-          )}
-        </View>
+            <View style={[styles.addRow, { borderColor: colors.border }]}>
+              <TextInput
+                value={locNameInput}
+                onChangeText={(txt) => {
+                  setLocNameInput(txt);
+                  if (txt.trim().length < 2) {
+                    setLocSuggestions([]);
+                    setLocSearching(false);
+                  }
+                }}
+                placeholder={group.location?.name ?? (language === 'te' ? 'సన్నిధానం స్థలం వెతకండి (OpenMaps)...' : 'Search place via OpenMaps...')}
+                placeholderTextColor={colors.textDim}
+                style={[styles.memberInput, { color: colors.text }]}
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  const name = locNameInput.trim() || group.location?.name || 'Sabarimala Sannidhanam';
+                  setGroupPublicLocation(group.id, {
+                    name,
+                    latitude: group.location?.latitude ?? 9.4321,
+                    longitude: group.location?.longitude ?? 77.0839,
+                    isPublic: true,
+                  });
+                  setLocSuggestions([]);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Save custom Sannidhanam location"
+                style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 }}
+              >
+                <Text style={{ color: '#0D1117', fontSize: 12, fontWeight: '800' }}>{language === 'te' ? 'సేవ్' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+            {locSearching && (
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>Searching OpenStreetMap...</Text>
+            )}
+            {locSuggestions.length > 0 && (
+              <View style={[styles.suggestionsBox, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                {locSuggestions.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => {
+                      setLocNameInput(item.name);
+                      setGroupPublicLocation(group.id, {
+                        name: item.name,
+                        latitude: item.latitude,
+                        longitude: item.longitude,
+                        isPublic: true,
+                      });
+                      setLocSuggestions([]);
+                    }}
+                    style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
+                  >
+                    <Ionicons name="location-outline" size={15} color={colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1}>
+                        {item.displayName}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {group.location?.isPublic && (
+              <Text style={[styles.subtitle, { color: colors.success }]}>
+                ✓ {language === 'te' ? 'పబ్లిక్‌గా ఉంది:' : 'Public on Map:'} {group.location.name} ({group.location.latitude.toFixed(4)}, {group.location.longitude.toFixed(4)})
+              </Text>
+            )}
+          </View>
         )}
 
         {/* Guru Swamy Verification & Nomination */}
         {activeSection === 'overview' && (
-        <>
-        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.row}>
-            <View>
-              <Text style={[styles.section, { color: colors.text }]}>{t('guru')}</Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>{group.guruName ?? t('guideNotAssigned')}</Text>
-            </View>
-            <TouchableOpacity onPress={() => nominate(group.id, group.members[0]?.name ?? '')}>
-              <Text style={styles.link}>{group.guruName ? t('approved') : t('nominate')}</Text>
-            </TouchableOpacity>
-          </View>
-          {group.guruName && (
-            <View style={styles.verifiedGuruRow}>
-              <Text style={styles.good}>
-                ✓ {t('approved')} {group.guruApprovalCount}/{Math.max(0, group.members.length - 1)}
-              </Text>
-              <Text style={styles.verifiedSubText}>
-                {language === 'te' ? 'గురు స్వామి మార్గదర్శకత్వం కలిగిన ధృవీకరించబడిన సమూహం' : 'Verified circle with active Guru Swamy guidance'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Members with Search */}
-        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.row}>
-            <Text style={[styles.section, { color: colors.text }]}>{t('members')}</Text>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>{filteredMembers.length} listed</Text>
-          </View>
-
-          {/* Member Search Bar */}
-          <View style={[styles.searchBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Ionicons name="search" size={16} color={colors.textMuted} />
-            <TextInput
-              value={memberSearchQuery}
-              onChangeText={setMemberSearchQuery}
-              placeholder={language === 'te' ? 'సభ్యులను వెతకండి...' : 'Search group members...'}
-              placeholderTextColor={colors.textDim}
-              style={[styles.searchInput, { color: colors.text }]}
-            />
-            {memberSearchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setMemberSearchQuery('')}>
-                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {filteredMembers.map((m) => (
-            <View key={m.userId} style={styles.member}>
-              <View style={styles.memberAvatar}>
-                <Text style={styles.memberInitial}>{m.name.slice(0, 1).toUpperCase()}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.memberName, { color: colors.text }]}>{m.name}</Text>
-                <Text style={[styles.subtitle, { color: colors.textMuted }]}>{m.role.replace('_', ' ').toLowerCase()}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() =>
-                  setRole(group.id, m.userId,
-                    m.role === 'MEMBER' ? 'EXPENSE_MANAGER' : m.role === 'EXPENSE_MANAGER' ? 'GROUP_ADMIN' : 'MEMBER'
-                  )
-                }
-              >
-                <Text style={styles.role}>Role</Text>
-              </TouchableOpacity>
-              {group.members.length > 1 && (
-                <TouchableOpacity onPress={() => removeMember(group.id, m.userId)}>
-                  <Ionicons name="close-circle" color={colors.error} size={20} />
+          <>
+            <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.row}>
+                <View>
+                  <Text style={[styles.section, { color: colors.text }]}>{t('guru')}</Text>
+                  <Text style={[styles.subtitle, { color: colors.textMuted }]}>{group.guruName ?? t('guideNotAssigned')}</Text>
+                </View>
+                <TouchableOpacity onPress={() => nominate(group.id, group.members[0]?.name ?? '')}>
+                  <Text style={styles.link}>{group.guruName ? t('approved') : t('nominate')}</Text>
                 </TouchableOpacity>
+              </View>
+              {group.guruName && (
+                <View style={styles.verifiedGuruRow}>
+                  <Text style={styles.good}>
+                    ✓ {t('approved')} {group.guruApprovalCount}/{Math.max(0, group.members.length - 1)}
+                  </Text>
+                  <Text style={styles.verifiedSubText}>
+                    {language === 'te' ? 'గురు స్వామి మార్గదర్శకత్వం కలిగిన ధృవీకరించబడిన సమూహం' : 'Verified circle with active Guru Swamy guidance'}
+                  </Text>
+                </View>
               )}
             </View>
-          ))}
 
-          {/* Add member (raw name or registered profile) */}
-          <View style={[styles.addRow, { borderColor: colors.border }]}>
-            <TextInput
-              value={memberInput}
-              onChangeText={setMemberInput}
-              placeholder={language === 'te' ? 'సభ్యుని పేరు నమోదు చేయండి...' : 'Enter member name to add...'}
-              placeholderTextColor={colors.textDim}
-              style={[styles.memberInput, { color: colors.text }]}
-            />
-            <TouchableOpacity onPress={handleAddMember}>
-              <Ionicons name="person-add" color={colors.primary} size={23} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Group Chat / Notes */}
-        <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.row}>
-            <Text style={[styles.section, { color: colors.text }]}>{t('groupChat')}</Text>
-            <Text style={styles.live}>● LIVE</Text>
-          </View>
-          {messages.length === 0 ? (
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              {language === 'te'
-                ? 'మీ వలయంతో ఒక ఉపయోగకరమైన గమనిక లేదా ప్రణాళికను పంచుకోండి.'
-                : 'Share a helpful note, plan or reminder with your circle.'}
-            </Text>
-          ) : (
-            messages.slice(-4).map((x) => (
-              <View key={x.id} style={[styles.message, { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderWidth: 1 }]}>
-                <Text style={styles.messageAuthor}>{x.author}</Text>
-                <Text style={[styles.messageText, { color: colors.text }]}>{x.text}</Text>
+            {/* Members with Search */}
+            <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.row}>
+                <Text style={[styles.section, { color: colors.text }]}>{t('members')}</Text>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>{filteredMembers.length} listed</Text>
               </View>
-            ))
-          )}
-          <View style={[styles.addRow, { borderColor: colors.border }]}>
-            <TextInput
-              value={noteInput}
-              onChangeText={setNoteInput}
-              placeholder={t('message')}
-              placeholderTextColor={colors.textDim}
-              style={[styles.memberInput, { color: colors.text }]}
-            />
-            <TouchableOpacity onPress={handlePostMessage}>
-              <Ionicons name="send" color={colors.primary} size={21} />
-            </TouchableOpacity>
-          </View>
-        </View>
-        </>
+
+              {/* Member Search Bar */}
+              <View style={[styles.searchBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="search" size={16} color={colors.textMuted} />
+                <TextInput
+                  value={memberSearchQuery}
+                  onChangeText={setMemberSearchQuery}
+                  placeholder={language === 'te' ? 'సభ్యులను వెతకండి...' : 'Search group members...'}
+                  placeholderTextColor={colors.textDim}
+                  style={[styles.searchInput, { color: colors.text }]}
+                />
+                {memberSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setMemberSearchQuery('')}>
+                    <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {filteredMembers.map((m) => (
+                <View key={m.userId} style={styles.member}>
+                  <View style={styles.memberAvatar}>
+                    <Text style={styles.memberInitial}>{m.name.slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.memberName, { color: colors.text }]}>{m.name}</Text>
+                    <Text style={[styles.subtitle, { color: colors.textMuted }]}>{m.role.replace('_', ' ').toLowerCase()}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setRole(group.id, m.userId,
+                        m.role === 'MEMBER' ? 'EXPENSE_MANAGER' : m.role === 'EXPENSE_MANAGER' ? 'GROUP_ADMIN' : 'MEMBER'
+                      )
+                    }
+                  >
+                    <Text style={styles.role}>Role</Text>
+                  </TouchableOpacity>
+                  {group.members.length > 1 && (
+                    <TouchableOpacity onPress={() => removeMember(group.id, m.userId)}>
+                      <Ionicons name="close-circle" color={colors.error} size={20} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+
+              {/* Add member (raw name or registered profile) */}
+              <View style={[styles.addRow, { borderColor: colors.border }]}>
+                <TextInput
+                  value={memberInput}
+                  onChangeText={setMemberInput}
+                  placeholder={language === 'te' ? 'సభ్యుని పేరు నమోదు చేయండి...' : 'Enter member name to add...'}
+                  placeholderTextColor={colors.textDim}
+                  style={[styles.memberInput, { color: colors.text }]}
+                />
+                <TouchableOpacity onPress={handleAddMember}>
+                  <Ionicons name="person-add" color={colors.primary} size={23} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Group Chat / Notes */}
+            <View style={[styles.card, getClayStyle(activeTheme, 'medium'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.row}>
+                <Text style={[styles.section, { color: colors.text }]}>{t('groupChat')}</Text>
+                <Text style={styles.live}>● LIVE</Text>
+              </View>
+              {messages.length === 0 ? (
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                  {language === 'te'
+                    ? 'మీ వలయంతో ఒక ఉపయోగకరమైన గమనిక లేదా ప్రణాళికను పంచుకోండి.'
+                    : 'Share a helpful note, plan or reminder with your circle.'}
+                </Text>
+              ) : (
+                messages.slice(-4).map((x) => (
+                  <View key={x.id} style={[styles.message, { backgroundColor: colors.surfaceElevated, borderColor: colors.border, borderWidth: 1 }]}>
+                    <Text style={styles.messageAuthor}>{x.author}</Text>
+                    <Text style={[styles.messageText, { color: colors.text }]}>{x.text}</Text>
+                  </View>
+                ))
+              )}
+              <View style={[styles.addRow, { borderColor: colors.border }]}>
+                <TextInput
+                  value={noteInput}
+                  onChangeText={setNoteInput}
+                  placeholder={t('message')}
+                  placeholderTextColor={colors.textDim}
+                  style={[styles.memberInput, { color: colors.text }]}
+                />
+                <TouchableOpacity onPress={handlePostMessage}>
+                  <Ionicons name="send" color={colors.primary} size={21} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
         )}
 
         {/* Add Expense */}
         {activeSection === 'location' && (
-        <>
-        <TouchableOpacity style={styles.expense} onPress={() => router.push('/expenses/add')}>
-          <Ionicons name="wallet-outline" color={colors.primary} size={22} />
-          <View>
-            <Text style={styles.expenseTitle}>{t('addExpense')}</Text>
-            <Text style={styles.subtitle}>{t('splitCosts')}</Text>
-          </View>
-        </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.expense} onPress={() => router.push('/expenses/add')}>
+              <Ionicons name="wallet-outline" color={colors.primary} size={22} />
+              <View>
+                <Text style={styles.expenseTitle}>{t('addExpense')}</Text>
+                <Text style={styles.subtitle}>{t('splitCosts')}</Text>
+              </View>
+            </TouchableOpacity>
 
-        {/* Balances */}
-        {balances.map((b) => (
-          <View key={b.userId} style={[styles.balance, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.memberName, { color: colors.text }]}>{b.name}</Text>
-            <Text style={[styles.net, { color: b.net >= 0 ? colors.success : colors.error }]}>
-              {b.net >= 0 ? 'Gets ' : 'Owes '}₹{Math.abs(b.net).toFixed(0)}
-            </Text>
-          </View>
-        ))}
+            {/* Balances */}
+            {balances.map((b) => (
+              <View key={b.userId} style={[styles.balance, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.memberName, { color: colors.text }]}>{b.name}</Text>
+                <Text style={[styles.net, { color: b.net >= 0 ? colors.success : colors.error }]}>
+                  {b.net >= 0 ? 'Gets ' : 'Owes '}₹{Math.abs(b.net).toFixed(0)}
+                </Text>
+              </View>
+            ))}
 
-        {/* Settlements */}
-        {settlements.map((s, i) => (
-          <TouchableOpacity key={i} style={[styles.settlement, { borderColor: colors.border }]}>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>{s.fromName} → {s.toName}</Text>
-            <Text style={styles.link}>₹{s.amount.toFixed(0)} · {t('markPaid')}</Text>
-          </TouchableOpacity>
-        ))}
-        </>
+            {/* Settlements */}
+            {settlements.map((s, i) => (
+              <TouchableOpacity key={i} style={[styles.settlement, { borderColor: colors.border }]}>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>{s.fromName} → {s.toName}</Text>
+                <Text style={styles.link}>₹{s.amount.toFixed(0)} · {t('markPaid')}</Text>
+              </TouchableOpacity>
+            ))}
+          </>
         )}
       </ScrollView>
     </View>

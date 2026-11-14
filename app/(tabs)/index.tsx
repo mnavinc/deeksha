@@ -1,5 +1,5 @@
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, useWindowDimensions } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { router } from 'expo-router';
 import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { getDeekshaType } from '@/data/deekshaTypes';
@@ -46,6 +46,7 @@ export default function HomeScreen() {
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const alreadyCheckedIn = lastDailyCheckinDate === todayStr;
+  const sunTimes = useMemo(() => calculateSunTimes(), []);
 
   const handleCheckin = useCallback(() => {
     checkAllTasks();
@@ -84,7 +85,6 @@ export default function HomeScreen() {
   const groupTotal = groupExpenses.reduce((s, e) => s + e.amount, 0);
 
   const isCheckedIn = alreadyCheckedIn || checkinDone;
-  const sunTimes = calculateSunTimes();
   const needsProfileCompletion = !isProfileComplete(profile);
   const timelyAlert = getTimelyDeekshaAlert(new Date(), sunTimes, needsProfileCompletion, profile.language);
 

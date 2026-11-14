@@ -114,8 +114,10 @@ export async function fetchNearbyTemplesOSM(
   }
 }
 
+const placeSuggestionCache = new Map<string, OsmPlaceSuggestion[]>();
+
 /**
- * Autocomplete location suggestions using OpenStreetMap Nominatim.
+ * Autocomplete location suggestions using OpenStreetMap Nominatim (cached).
  * Falls back to matching curated sacred/temple locations when offline.
  */
 export async function searchPlaceSuggestionsOSM(
@@ -124,6 +126,10 @@ export async function searchPlaceSuggestionsOSM(
 ): Promise<OsmPlaceSuggestion[]> {
   const clean = query.trim();
   if (clean.length < 2) return [];
+
+  const cacheKey = `${clean.toLowerCase()}::${limit}`;
+  const cached = placeSuggestionCache.get(cacheKey);
+  if (cached) return cached;
 
   const curatedMatches: OsmPlaceSuggestion[] = getNearbyTemples(9.4321, 77.0839, 5000)
     .filter(
@@ -176,7 +182,13 @@ export async function searchPlaceSuggestionsOSM(
       })
       .filter((item): item is OsmPlaceSuggestion => item !== null);
 
-    return osmSuggestions.length > 0 ? osmSuggestions : curatedMatches;
+    const finalResults = osmSuggestions.length > 0 ? osmSuggestions : curatedMatches;
+    if (placeSuggestionCache.size >= 100) {
+      const oldestKey = placeSuggestionCache.keys().next().value;
+      if (oldestKey) placeSuggestionCache.delete(oldestKey);
+    }
+    placeSuggestionCache.set(cacheKey, finalResults);
+    return finalResults;
   } catch {
     return curatedMatches;
   }

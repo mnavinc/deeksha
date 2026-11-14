@@ -37,6 +37,8 @@ const booleanFromEnv = (defaultValue: boolean) =>
     return val;
   }, z.boolean().default(defaultValue));
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default(isTest ? 'test' : 'development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -45,16 +47,21 @@ const envSchema = z.object({
     .default(isTest ? 'postgresql://postgres:postgres@localhost:5432/deeksha_test' : '')
     .refine((val) => isTest || val.length > 0, { message: 'DATABASE_URL is required' }),
   DATABASE_SSL: z.enum(['true', 'false', 'require']).optional(),
-  DATABASE_SSL_REJECT_UNAUTHORIZED: booleanFromEnv(false),
+  DATABASE_SSL_REJECT_UNAUTHORIZED: booleanFromEnv(isProd),
   JWT_SECRET: z
     .string()
     .default(
       isTest
         ? 'test-jwt-secret-at-least-32-chars-long-security-key'
+        : isProd
+        ? ''
         : 'replace-with-a-secure-32-character-minimum-secret-key'
     )
     .refine((val) => val.length >= 32, {
       message: 'JWT_SECRET must be at least 32 characters for enterprise security',
+    })
+    .refine((val) => !isProd || val !== 'replace-with-a-secure-32-character-minimum-secret-key', {
+      message: 'Default JWT_SECRET placeholder is not allowed in production',
     }),
   CORS_ORIGIN: z.string().default('http://localhost:8081'),
 
@@ -66,8 +73,8 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 
-  // Test / Demo Credentials Support
-  ENABLE_TEST_LOGIN: booleanFromEnv(true),
+  // Test / Demo Credentials Support (disabled by default in production)
+  ENABLE_TEST_LOGIN: booleanFromEnv(!isProd),
 
   // SMTP Email Settings
   SMTP_HOST: z.string().default('smtp.gmail.com'),

@@ -49,8 +49,8 @@ export function corsOriginHandler(
     return;
   }
 
-  // Allow preview deployments on vercel
-  if (/\.vercel\.app$/i.test(origin) || /\.vercel\.dev$/i.test(origin)) {
+  // Allow official Swamiseva production web origin
+  if (origin === 'https://deeksha-sigma.vercel.app') {
     cb(null, true);
     return;
   }

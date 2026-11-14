@@ -55,7 +55,10 @@ export default function MapScreen() {
 
   useEffect(() => {
     const clean = placeQuery.trim();
-    if (clean.length < 2) return;
+    if (clean.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     let cancelled = false;
     const timer = setTimeout(async () => {
       const res = await searchPlaceSuggestionsOSM(clean, 5);
@@ -98,8 +101,8 @@ export default function MapScreen() {
   const mapRegion = userLocation
     ? { ...userLocation, latitudeDelta: 5, longitudeDelta: 5 }
     : temples.length > 0
-    ? { latitude: temples[0].latitude, longitude: temples[0].longitude, latitudeDelta: 10, longitudeDelta: 10 }
-    : { latitude: 9.4321, longitude: 77.0839, latitudeDelta: 15, longitudeDelta: 15 }; // Sabarimala default
+      ? { latitude: temples[0].latitude, longitude: temples[0].longitude, latitudeDelta: 10, longitudeDelta: 10 }
+      : { latitude: 9.4321, longitude: 77.0839, latitudeDelta: 15, longitudeDelta: 15 }; // Sabarimala default
 
   return (
     <View style={styles.page}>
@@ -139,10 +142,7 @@ export default function MapScreen() {
           <Ionicons name="search" size={16} color={colors.textMuted} />
           <TextInput
             value={placeQuery}
-            onChangeText={(txt) => {
-              setPlaceQuery(txt);
-              if (txt.trim().length < 2) setSuggestions([]);
-            }}
+            onChangeText={setPlaceQuery}
             placeholder="Search city or area via OpenMaps..."
             placeholderTextColor={colors.textDim}
             style={styles.osmSearchInput}

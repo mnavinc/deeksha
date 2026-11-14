@@ -129,21 +129,24 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         if (!otpResult.rows.length) {
           // Check if there's an OTP but attempts exceeded
           const expiredResult = await pool.query(
-            `SELECT attempts FROM email_otp_codes WHERE identifier = $1 AND is_verified = false ORDER BY created_at DESC LIMIT 1`,
+            `SELECT id, attempts FROM email_otp_codes WHERE identifier = $1 AND is_verified = false ORDER BY created_at DESC LIMIT 1`,
             [identifier]
           );
-          const attempts = expiredResult.rows[0]?.attempts ?? 0;
+          const latestRow = expiredResult.rows[0];
+          const attempts = latestRow?.attempts ?? 0;
           if (attempts >= MAX_ATTEMPTS) {
             return reply.status(429).send({
               error: 'TOO_MANY_ATTEMPTS',
               message: 'Too many failed attempts. Please request a new OTP.',
             });
           }
-          // Increment attempts
-          await pool.query(
-            `UPDATE email_otp_codes SET attempts = attempts + 1 WHERE identifier = $1 AND is_verified = false`,
-            [identifier]
-          );
+          // Increment attempts on the latest active OTP only
+          if (latestRow?.id) {
+            await pool.query(
+              `UPDATE email_otp_codes SET attempts = attempts + 1 WHERE id = $1`,
+              [latestRow.id]
+            );
+          }
           return reply.status(400).send({
             error: 'INVALID_OTP',
             message: 'Invalid or expired OTP. Please try again.',
@@ -205,6 +208,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const { identifier } = sendOtpSchema.parse(request.body);
       const otp = generateOtp();
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+      await pool.query(
+        `DELETE FROM email_otp_codes WHERE expires_at < now() - interval '1 day'`
+      );
 
       await pool.query(
         `UPDATE email_otp_codes SET is_verified = true WHERE identifier = $1 AND is_verified = false`,
