@@ -28,6 +28,10 @@ export interface NotificationJobPayload {
 let redisConnection: Redis | null = null;
 let notificationQueue: Queue<NotificationJobPayload> | null = null;
 let notificationWorker: Worker<NotificationJobPayload> | null = null;
+let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+let lastMorningRunDate = '';
+let lastEveningRunDate = '';
+let lastNudgeRunSlot = '';
 let socketServer: SocketIOServer | null = null;
 
 export function attachNotificationSocketIO(io: SocketIOServer): void {
@@ -188,7 +192,7 @@ async function resolveTimeBasedRecipients(actionType: NotificationActionType): P
   if (actionType === 'profile_incomplete_nudge') {
     const res = await pool.query<{ id: string }>(
       `SELECT id FROM users
-       WHERE (name IS NULL OR trim(name) = '' OR name = 'Swami')
+       WHERE (display_name IS NULL OR trim(display_name) = '' OR display_name = 'Swami')
           OR (phone IS NULL OR trim(phone) = '')
        LIMIT 500`
     );
@@ -225,19 +229,73 @@ export async function processNotificationJob(job: Job<NotificationJobPayload>): 
   });
 }
 
-export async function initNotificationWorker(): Promise<{ enabled: boolean }> {
-  if (env.NODE_ENV === 'test' || !env.REDIS_URL) {
-    return { enabled: false };
+function startInProcessFallbackScheduler(): void {
+  if (fallbackInterval || env.NODE_ENV === 'test') return;
+  fallbackInterval = setInterval(() => {
+    const now = new Date();
+    const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+    const dateKey = ist.toISOString().slice(0, 10);
+    const hour = ist.getUTCHours();
+    const minute = ist.getUTCMinutes();
+
+    if (hour === 6 && minute === 0 && lastMorningRunDate !== dateKey) {
+      lastMorningRunDate = dateKey;
+      void dispatchPayloadInProcess({ actionType: 'daily_morning_sandhya' });
+    }
+    if (hour === 19 && minute === 0 && lastEveningRunDate !== dateKey) {
+      lastEveningRunDate = dateKey;
+      void dispatchPayloadInProcess({ actionType: 'daily_evening_checkin' });
+    }
+    const nudgeSlot = `${dateKey}-${Math.floor(hour / 6)}`;
+    if (hour % 6 === 0 && minute === 0 && lastNudgeRunSlot !== nudgeSlot) {
+      lastNudgeRunSlot = nudgeSlot;
+      void dispatchPayloadInProcess({ actionType: 'profile_incomplete_nudge' });
+    }
+  }, 60_000);
+  fallbackInterval.unref?.();
+}
+
+async function dispatchPayloadInProcess(payload: NotificationJobPayload): Promise<number> {
+  try {
+    return await processNotificationJob({ data: payload } as Job<NotificationJobPayload>);
+  } catch (err) {
+    console.warn('[Notifications] In-process dispatch error:', err);
+    return 0;
+  }
+}
+
+export async function initNotificationWorker(): Promise<{ enabled: boolean; mode: 'bullmq' | 'in_process' | 'disabled' }> {
+  if (env.NODE_ENV === 'test') {
+    return { enabled: false, mode: 'disabled' };
+  }
+  const redisUrl = env.REDIS_URL?.trim();
+  const isLocalRedisInProd =
+    env.NODE_ENV === 'production' &&
+    Boolean(redisUrl && /localhost|127\.0\.0\.1|::1/i.test(redisUrl));
+
+  if (!redisUrl || isLocalRedisInProd) {
+    console.info('[Notifications] No remote REDIS_URL configured; using lightweight in-process scheduler.');
+    startInProcessFallbackScheduler();
+    return { enabled: true, mode: 'in_process' };
   }
   if (notificationQueue && notificationWorker) {
-    return { enabled: true };
+    return { enabled: true, mode: 'bullmq' };
   }
 
   try {
-    redisConnection = new Redis(env.REDIS_URL, {
+    const client = new Redis(redisUrl, {
+      lazyConnect: true,
+      connectTimeout: 3000,
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      retryStrategy: (times) => (times > 2 ? null : Math.min(times * 500, 1500)),
     });
+    client.on('error', (err) => {
+      console.warn('[BullMQ Redis]', err.message);
+    });
+    await client.connect();
+    await client.ping();
+    redisConnection = client;
 
     notificationQueue = new Queue<NotificationJobPayload>(NOTIFICATION_QUEUE_NAME, {
       connection: redisConnection,
@@ -259,6 +317,9 @@ export async function initNotificationWorker(): Promise<{ enabled: boolean }> {
         concurrency: 5,
       }
     );
+    notificationWorker.on('error', (err) => {
+      console.warn('[BullMQ Worker]', err.message);
+    });
 
     // Register recurring time-based BullMQ cron jobs
     await notificationQueue.upsertJobScheduler(
@@ -288,10 +349,12 @@ export async function initNotificationWorker(): Promise<{ enabled: boolean }> {
       }
     );
 
-    return { enabled: true };
+    return { enabled: true, mode: 'bullmq' };
   } catch (err) {
-    console.warn('[BullMQ] Failed to initialize notification worker:', err);
-    return { enabled: false };
+    console.warn('[BullMQ] Redis unavailable, falling back to in-process notification scheduler:', err instanceof Error ? err.message : err);
+    await closeNotificationWorker().catch(() => {});
+    startInProcessFallbackScheduler();
+    return { enabled: true, mode: 'in_process' };
   }
 }
 
@@ -300,6 +363,14 @@ export async function enqueueNotification(
   opts?: { delayMs?: number; jobId?: string }
 ): Promise<{ queued: boolean; jobId?: string }> {
   if (!notificationQueue) {
+    if (env.NODE_ENV !== 'test') {
+      if (opts?.delayMs && opts.delayMs > 0) {
+        const t = setTimeout(() => void dispatchPayloadInProcess(payload), opts.delayMs);
+        t.unref?.();
+      } else {
+        setImmediate(() => void dispatchPayloadInProcess(payload));
+      }
+    }
     return { queued: false };
   }
   const job = await notificationQueue.add(payload.actionType, payload, {
@@ -310,10 +381,14 @@ export async function enqueueNotification(
 }
 
 export async function closeNotificationWorker(): Promise<void> {
+  if (fallbackInterval) {
+    clearInterval(fallbackInterval);
+    fallbackInterval = null;
+  }
   await notificationWorker?.close();
   await notificationQueue?.close();
   if (redisConnection) {
-    await redisConnection.quit();
+    redisConnection.disconnect();
   }
   notificationWorker = null;
   notificationQueue = null;
