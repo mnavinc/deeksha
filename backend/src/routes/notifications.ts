@@ -14,8 +14,11 @@ const pushTokenSchema = z.object({
 
 const triggerSchema = z.object({
   actionType: z.enum([
+    'welcome',
     'qr_joined',
     'checkin_completed',
+    'journey_update',
+    'group_member_added',
     'group_expense_added',
     'group_announcement',
     'profile_incomplete_nudge',

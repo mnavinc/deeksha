@@ -14,6 +14,14 @@ import { calculateTotalPoints, buildAchievementStats, getUnlockedAchievements } 
 import type { Expense, Settlement } from '@/engines/expenseEngine';
 import { getSwamiTier } from '@/data/swamiNames';
 import { ApiClient } from '@/services/api';
+import {
+  sendDailyCheckinNotification,
+  sendGroupExpenseNotification,
+  sendGroupMemberAddedNotification,
+  sendGroupMessageNotification,
+  sendJourneyUpdateNotification,
+  sendWelcomeNotification,
+} from '@/utils/notifications';
 
 export interface GroupMember {
   userId: string;
@@ -357,6 +365,9 @@ export const useAppStore = create<AppState>()(
           lastDailyCheckinDate: todayStr,
         });
         get().refreshGamification();
+        if (get().notificationsEnabled) {
+          void sendDailyCheckinNotification(log.dayNumber, 10, get().authToken);
+        }
         return true;
       },
 
@@ -381,6 +392,9 @@ export const useAppStore = create<AppState>()(
         };
         set({ enrollment });
         get().refreshGamification();
+        if (get().notificationsEnabled && get().profile) {
+          void sendWelcomeNotification(get().profile!.name, get().authToken);
+        }
 
         const { authToken } = get();
         if (authToken) {
@@ -463,7 +477,7 @@ export const useAppStore = create<AppState>()(
       },
 
       unlockJourneyCheckpoint: (checkpointId) => {
-        const { enrollment } = get();
+        const { enrollment, notificationsEnabled, authToken } = get();
         if (!enrollment || enrollment.unlockedJourneyIds.includes(checkpointId)) return;
         set({
           enrollment: {
@@ -471,6 +485,9 @@ export const useAppStore = create<AppState>()(
             unlockedJourneyIds: [...enrollment.unlockedJourneyIds, checkpointId],
           },
         });
+        if (notificationsEnabled) {
+          void sendJourneyUpdateNotification(checkpointId.replaceAll('_', ' '), authToken);
+        }
       },
 
       completeDeeksha: () => {
@@ -770,6 +787,15 @@ export const useAppStore = create<AppState>()(
       addExpense: (expense) => {
         set({ expenses: [...get().expenses, expense] });
         get().refreshGamification();
+        if (expense.groupId && get().notificationsEnabled) {
+          const group = get().groups.find((g) => g.id === expense.groupId);
+          void sendGroupExpenseNotification(
+            group?.name ?? 'Sannidhanam',
+            expense.amount,
+            get().profile?.name ?? 'Swami',
+            get().authToken
+          );
+        }
       },
 
       addSettlement: (settlement) => {
@@ -780,13 +806,18 @@ export const useAppStore = create<AppState>()(
       addGroupMember: (groupId, name) => {
         const profile = get().profile;
         if (!isProfileComplete(profile) || !name.trim()) return;
+        const cleanMember = name.trim();
+        const group = get().groups.find((g) => g.id === groupId);
         set({
           groups: get().groups.map((g) =>
             g.id === groupId
-              ? { ...g, members: [...g.members, { userId: generateId(), name: name.trim(), role: 'MEMBER' }] }
+              ? { ...g, members: [...g.members, { userId: generateId(), name: cleanMember, role: 'MEMBER' }] }
               : g
           ),
         });
+        if (get().notificationsEnabled) {
+          void sendGroupMemberAddedNotification(group?.name ?? 'Sannidhanam', cleanMember, get().authToken);
+        }
       },
       setGroupMemberRole: (groupId, userId, role) =>
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, members: g.members.map((m) => m.userId === userId ? { ...m, role } : m) } : g) }),
@@ -795,7 +826,12 @@ export const useAppStore = create<AppState>()(
       addGroupMessage: (groupId, text) => {
         const profile = get().profile;
         if (!isProfileComplete(profile) || !profile || !text.trim()) return;
-        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, messages: [...(g.messages ?? []), { id: generateId(), author: profile.name, text: text.trim(), createdAt: new Date().toISOString() }] } : g) });
+        const cleanText = text.trim();
+        const group = get().groups.find((g) => g.id === groupId);
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, messages: [...(g.messages ?? []), { id: generateId(), author: profile.name, text: cleanText, createdAt: new Date().toISOString() }] } : g) });
+        if (get().notificationsEnabled) {
+          void sendGroupMessageNotification(group?.name ?? 'Sannidhanam', profile.name, cleanText, get().authToken);
+        }
       },
       nominateGroupGuru: (groupId, name) =>
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, guruName: name, guruApprovalCount: Math.max(0, g.members.length - 1), announcements: [...(g.announcements ?? []), { id: generateId(), text: `Guru approval requested for ${name}`, createdAt: new Date().toISOString() }] } : g) }),

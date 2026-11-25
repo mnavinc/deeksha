@@ -7,8 +7,11 @@ import { pool } from '../db.js';
 export const NOTIFICATION_QUEUE_NAME = 'swamiseva-notifications';
 
 export type NotificationActionType =
+  | 'welcome'
   | 'qr_joined'
   | 'checkin_completed'
+  | 'journey_update'
+  | 'group_member_added'
   | 'group_expense_added'
   | 'group_announcement'
   | 'profile_incomplete_nudge'
@@ -45,6 +48,14 @@ function buildDefaultContent(payload: NotificationJobPayload): {
 } {
   const meta = payload.data ?? {};
   switch (payload.actionType) {
+    case 'welcome':
+      return {
+        category: 'welcome',
+        title: payload.title ?? '🙏 Welcome to Swamiseva Deeksha Journey!',
+        body:
+          payload.body ??
+          `Swamiye Saranam Ayyappa, ${String(meta.name ?? 'Swami')}! Your sacred Vrutham & Sannidhanam notifications are active.`,
+      };
     case 'qr_joined':
       return {
         category: 'sannidhanam_qr',
@@ -60,6 +71,22 @@ function buildDefaultContent(payload: NotificationJobPayload): {
         body:
           payload.body ??
           `Day ${String(meta.day ?? '')} check-in complete (+${String(meta.points ?? 10)} pts). Swamiye Saranam Ayyappa!`,
+      };
+    case 'journey_update':
+      return {
+        category: 'journey_update',
+        title: payload.title ?? `🗺️ Journey Milestone: ${String(meta.milestone ?? 'Unlocked')}`,
+        body:
+          payload.body ??
+          `You reached ${String(meta.milestone ?? 'a new Yatra checkpoint')} on your Deeksha Journey!`,
+      };
+    case 'group_member_added':
+      return {
+        category: 'group_member',
+        title: payload.title ?? `👥 New Member in ${String(meta.groupName ?? 'Sannidhanam')}`,
+        body:
+          payload.body ??
+          `${String(meta.memberName ?? 'A Swami')} was added to ${String(meta.groupName ?? 'your Sannidhanam group')}.`,
       };
     case 'group_expense_added':
       return {
@@ -252,7 +279,7 @@ function startInProcessFallbackScheduler(): void {
       void dispatchPayloadInProcess({ actionType: 'profile_incomplete_nudge' });
     }
   }, 60_000);
-  fallbackInterval.unref?.();
+  (fallbackInterval as { unref?: () => void })?.unref?.();
 }
 
 async function dispatchPayloadInProcess(payload: NotificationJobPayload): Promise<number> {
@@ -366,7 +393,7 @@ export async function enqueueNotification(
     if (env.NODE_ENV !== 'test') {
       if (opts?.delayMs && opts.delayMs > 0) {
         const t = setTimeout(() => void dispatchPayloadInProcess(payload), opts.delayMs);
-        t.unref?.();
+        (t as { unref?: () => void })?.unref?.();
       } else {
         setImmediate(() => void dispatchPayloadInProcess(payload));
       }

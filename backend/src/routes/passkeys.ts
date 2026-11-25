@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { env } from '../config.js';
 import { pool } from '../db.js';
 import { sendWelcomeEmail } from '../emailService.js';
+import { enqueueNotification } from '../workers/notificationWorker.js';
 
 const CHALLENGE_TTL_MINUTES = 5;
 
@@ -390,6 +391,13 @@ export const passkeyRoutes: FastifyPluginAsync = async (app) => {
       if (isNewUser && userRow?.email) {
         void sendWelcomeEmail(userRow.email, userRow.name);
       }
+      if (isNewUser && userRow?.id) {
+        void enqueueNotification({
+          userId: userRow.id,
+          actionType: 'welcome',
+          data: { name: userRow.name },
+        });
+      }
 
       const token = await app.jwt.sign(
         { sub: userRow.id, email: userRow.email, name: userRow.name },
@@ -627,6 +635,13 @@ export const passkeyRoutes: FastifyPluginAsync = async (app) => {
       if (isNewUser && userRow?.email) {
         void sendWelcomeEmail(userRow.email, userRow.name);
       }
+      if (isNewUser && userRow?.id) {
+        void enqueueNotification({
+          userId: userRow.id,
+          actionType: 'welcome',
+          data: { name: userRow.name },
+        });
+      }
 
       const token = await app.jwt.sign(
         { sub: userRow.id, email: userRow.email, name: userRow.name },
@@ -712,6 +727,13 @@ export const passkeyRoutes: FastifyPluginAsync = async (app) => {
 
       if (isNewUser && userRow?.email) {
         void sendWelcomeEmail(userRow.email, userRow.name);
+      }
+      if (isNewUser && userRow?.id) {
+        void enqueueNotification({
+          userId: userRow.id,
+          actionType: 'welcome',
+          data: { name: userRow.name },
+        });
       }
 
       const token = await app.jwt.sign(

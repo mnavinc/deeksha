@@ -3,6 +3,79 @@
  * Sunrise/Sunset Sandhya Alerts, Profile Completion Reminders, & Group Updates.
  */
 import { calculateSunTimes } from './solarTimes';
+import { createNotificationApi, type NotificationActionType } from '@/services/notificationApi';
+
+function emitLocalNotification(title: string, body: string): void {
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, { body });
+    } catch {
+      // Ignore browser notification errors in restricted contexts
+    }
+  }
+}
+
+export async function dispatchActionNotification(params: {
+  authToken?: string | null;
+  actionType: NotificationActionType;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+}): Promise<void> {
+  emitLocalNotification(params.title, params.body);
+  if (params.authToken) {
+    try {
+      await createNotificationApi(params.authToken).triggerNotification({
+        actionType: params.actionType,
+        title: params.title,
+        body: params.body,
+        data: params.data,
+      });
+    } catch {
+      // Offline-safe: do not block local user flow if backend is unreachable
+    }
+  }
+}
+
+export async function sendWelcomeNotification(name: string, authToken?: string | null): Promise<void> {
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'welcome',
+    title: '🙏 Welcome to Swamiseva Deeksha Journey!',
+    body: `Swamiye Saranam Ayyappa, ${name}! Daily check-in, journey & Sannidhanam notifications are enabled.`,
+    data: { name },
+  });
+}
+
+export async function sendDailyCheckinNotification(day: number, points: number, authToken?: string | null): Promise<void> {
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'checkin_completed',
+    title: '✅ Daily Deeksha Check-in Complete',
+    body: `Day ${day} Niyamas recorded (+${points} pts). Swamiye Saranam Ayyappa!`,
+    data: { day, points },
+  });
+}
+
+export async function sendJourneyUpdateNotification(milestone: string, authToken?: string | null): Promise<void> {
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'journey_update',
+    title: `🗺️ Journey Update: ${milestone}`,
+    body: `You unlocked "${milestone}" on your sacred Deeksha path!`,
+    data: { milestone },
+  });
+}
+
+export async function sendGroupMemberAddedNotification(groupName: string, memberName: string, authToken?: string | null): Promise<void> {
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'group_member_added',
+    title: `👥 New Member in ${groupName}`,
+    body: `${memberName} was added to ${groupName}.`,
+    data: { groupName, memberName },
+  });
+}
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -40,25 +113,41 @@ export async function scheduleDaily7pmCheckinReminder(): Promise<void> {
 /**
  * Trigger notification when a group member adds a new expense
  */
-export async function sendGroupExpenseNotification(groupName: string, amount: number, addedBy: string): Promise<void> {
+export async function sendGroupExpenseNotification(
+  groupName: string,
+  amount: number,
+  addedBy: string,
+  authToken?: string | null
+): Promise<void> {
   const title = `💰 New Group Expense — ${groupName}`;
   const body = `${addedBy} added ₹${amount.toLocaleString('en-IN')} to ${groupName}. Tap to view settlement details.`;
-
-  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body });
-  }
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'group_expense_added',
+    title,
+    body,
+    data: { groupName, amount, addedBy },
+  });
 }
 
 /**
  * Trigger notification when a new group message/announcement is posted
  */
-export async function sendGroupMessageNotification(groupName: string, author: string, message: string): Promise<void> {
+export async function sendGroupMessageNotification(
+  groupName: string,
+  author: string,
+  message: string,
+  authToken?: string | null
+): Promise<void> {
   const title = `📢 ${groupName} — Announcement`;
   const body = `${author}: "${message}"`;
-
-  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body });
-  }
+  await dispatchActionNotification({
+    authToken,
+    actionType: 'group_announcement',
+    title,
+    body,
+    data: { groupName, author, message },
+  });
 }
 
 /**

@@ -1,50 +1,58 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Button } from '@/components/Button';
 import { useAppStore } from '@/store/useAppStore';
 import { colors, spacing } from '@/theme/colors';
 import { translate, type AppLanguage } from '@/i18n';
+import { syncProfileContactInfo } from '@/services/passkeyAuth';
+import { requestNotificationPermission } from '@/utils/notifications';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function ProfileScreen() {
   const setProfile = useAppStore((s) => s.setProfile);
   const existing = useAppStore((s) => s.profile);
+  const authToken = useAppStore((s) => s.authToken);
   const { detectedLang } = useLocalSearchParams<{ detectedLang?: string }>();
 
   const defaultLang: AppLanguage = (existing?.language ?? detectedLang ?? 'te') as AppLanguage;
   const [name, setName] = useState(existing?.name ?? '');
+  const [email, setEmail] = useState(existing?.email ?? '');
+  const [phone, setPhone] = useState(existing?.phone ?? '');
   const [language, setLanguage] = useState<AppLanguage>(defaultLang);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
 
-  const handleContinue = (displayName: string) => {
-    if (!displayName.trim()) return;
+  const handleContinue = async () => {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+    if (!cleanName) return;
+
     setProfile({
       id: existing?.id ?? `user-${Date.now()}`,
-      name: displayName.trim(),
+      name: cleanName,
+      ...(cleanEmail ? { email: cleanEmail } : {}),
+      ...(cleanPhone ? { phone: cleanPhone } : {}),
       language,
       pilgrimageCount: existing?.pilgrimageCount ?? 0,
       onboardingComplete: false,
     });
-    router.push('/onboarding/deeksha-select');
-  };
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    try {
-      // Stub: In production, integrate with expo-auth-session + Google OAuth
-      // For now, simulate with a prompt
-      const mockName = 'Swami (Google)';
-      handleContinue(mockName);
-    } catch {
-      // fall through
-    } finally {
-      setGoogleLoading(false);
+    if (authToken) {
+      void syncProfileContactInfo(authToken, {
+        displayName: cleanName,
+        language,
+        email: cleanEmail || null,
+        phone: cleanPhone || null,
+      });
     }
+    if (Platform.OS !== 'web' || typeof window !== 'undefined') {
+      await requestNotificationPermission();
+    }
+    router.push('/onboarding/deeksha-select');
   };
 
   return (
@@ -67,42 +75,37 @@ export default function ProfileScreen() {
       <Text style={styles.title}>{t('whatToCallYou')}</Text>
       <Text style={styles.subtitle}>{t('everyPersonSwami')}</Text>
 
-      {/* Google Sign In */}
-      <TouchableOpacity
-        style={styles.googleButton}
-        onPress={handleGoogleSignIn}
-        disabled={googleLoading}
-        activeOpacity={0.85}
-      >
-        {googleLoading ? (
-          <ActivityIndicator color={colors.background} size="small" />
-        ) : (
-          <>
-            <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleText}>{t('signInWithGoogle')}</Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      {/* Divider */}
-      <View style={styles.divider}>
-        <View style={styles.line} />
-        <Text style={styles.dividerText}>{t('orContinueWithName')}</Text>
-        <View style={styles.line} />
-      </View>
-
       <TextInput
         style={styles.input}
-        placeholder={t('yourName')}
+        placeholder={`${t('yourName')} *`}
         placeholderTextColor={colors.textDim}
         value={name}
         onChangeText={setName}
         autoFocus={false}
       />
 
+      <TextInput
+        style={styles.input}
+        placeholder="Email (for Welcome & Notifications)"
+        placeholderTextColor={colors.textDim}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Mobile Number (for Profile & Alerts)"
+        placeholderTextColor={colors.textDim}
+        keyboardType="phone-pad"
+        value={phone}
+        onChangeText={setPhone}
+      />
+
       <Button
         title={t('continue')}
-        onPress={() => handleContinue(name)}
+        onPress={() => void handleContinue()}
         disabled={!name.trim()}
       />
     </View>
