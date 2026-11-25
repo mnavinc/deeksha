@@ -53,6 +53,7 @@ export function HeaderNav() {
     { label: t('aboutUs'), route: '/about' as any, icon: 'information-circle-outline' },
     { label: t('contactUs'), route: '/contact' as any, icon: 'mail-outline' },
     { label: t('privacyPolicy'), route: '/privacy' as any, icon: 'shield-checkmark-outline' },
+    { label: 'Terms & Conditions', route: '/terms' as any, icon: 'document-text-outline' },
   ];
 
   const performSignOut = () => {

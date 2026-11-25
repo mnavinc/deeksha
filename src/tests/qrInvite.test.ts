@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { buildSannidhanamInviteUrl, parseSannidhanamInvitePayload } from '../engines/qrInviteEngine';
 import { DEVOTIONAL_REELS } from '../data/devotionalReels';
 import { calculateSunTimes, getTimelyDeekshaAlert } from '../utils/solarTimes';
+import { computeMalaStartDate, resolveDeekshaDuration } from '../engines/deekshaEngine';
 
 describe('QR Sannidhanam Invite Engine & Viral Reels', () => {
   it('builds a zero-PII invite URL and parses sannidhanamId, referrerId, and eventTag', () => {
@@ -52,6 +53,21 @@ describe('QR Sannidhanam Invite Engine & Viral Reels', () => {
     assert.equal(pendingAlert.urgency, 'warning');
     assert.ok(pendingAlert.body.includes(sun.sunrise));
     assert.ok(pendingAlert.body.includes(sun.sunset));
+  });
+
+  it('computes mala start date for existing and upcoming malas and resolves duration by Kanni status', () => {
+    const ref = new Date('2026-11-23T10:00:00Z');
+    assert.equal(
+      computeMalaStartDate({ malaStatus: 'existing', completedDays: 10, referenceDate: ref }),
+      '2026-11-13'
+    );
+    assert.equal(
+      computeMalaStartDate({ malaStatus: 'upcoming', plannedStartDate: '2026-12-01', referenceDate: ref }),
+      '2026-12-01'
+    );
+    assert.equal(resolveDeekshaDuration(1, 21), 41);
+    assert.equal(resolveDeekshaDuration(2, 21), 21);
+    assert.equal(resolveDeekshaDuration(3, 11), 11);
   });
 });
 

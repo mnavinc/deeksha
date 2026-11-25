@@ -10,12 +10,14 @@ import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { JourneyTrailMap } from '@/components/JourneyTrailMap';
 import { HeaderNav } from '@/components/HeaderNav';
+import { QuickMalaSetupCard } from '@/components/QuickMalaSetupCard';
 import { SacredIcon, getCheckpointIconName } from '@/components/SacredIcons';
 import { useI18n } from '@/i18n';
 
 type ViewMode = 'map' | 'timeline';
 
 export default function JourneyScreen() {
+  const profile = useAppStore((s) => s.profile);
   const enrollment = useAppStore((s) => s.enrollment);
   const unlock = useAppStore((s) => s.unlockJourneyCheckpoint);
   const groups = useAppStore((s) => s.groups);
@@ -30,10 +32,16 @@ export default function JourneyScreen() {
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
         <HeaderNav />
-        <View style={styles.emptyCenter}>
-          <Text style={styles.emptyIcon}>🗺️</Text>
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('startDeekshaPrompt')}</Text>
-        </View>
+        {profile ? (
+          <ScrollView contentContainerStyle={styles.content}>
+            <QuickMalaSetupCard />
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyCenter}>
+            <Text style={styles.emptyIcon}>🗺️</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('startDeekshaPrompt')}</Text>
+          </View>
+        )}
       </View>
     );
   }

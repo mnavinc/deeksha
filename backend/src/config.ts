@@ -54,8 +54,8 @@ const envSchema = z.object({
       isTest
         ? 'test-jwt-secret-at-least-32-chars-long-security-key'
         : isProd
-        ? ''
-        : 'replace-with-a-secure-32-character-minimum-secret-key'
+          ? ''
+          : 'replace-with-a-secure-32-character-minimum-secret-key'
     )
     .refine((val) => val.length >= 32, {
       message: 'JWT_SECRET must be at least 32 characters for enterprise security',
@@ -82,6 +82,19 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('DeekshaOrg <noreply@deeksha.app>'),
+
+  // Resend Email Provider
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().default('Swamiseva <noreply@deeksha.app>'),
+
+  // WebAuthn / Passkeys
+  RP_ID: z.string().default('localhost'),
+  RP_NAME: z.string().default('Swamiseva Deeksha Journey'),
+  RP_ORIGIN: z.string().default('http://localhost:8081,https://deeksha-sigma.vercel.app'),
+
+  // Social OAuth (Google & Apple)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  APPLE_CLIENT_ID: z.string().optional(),
 
   // Redis / BullMQ Background Worker & Push Notifications
   REDIS_URL: z.string().optional(),

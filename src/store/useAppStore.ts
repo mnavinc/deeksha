@@ -46,6 +46,8 @@ export interface UserProfile {
   id: string;
   name: string;
   phone?: string;
+  email?: string;
+  newsletterSubscribed?: boolean;
   language: 'en' | 'te' | 'ml';
   pilgrimageCount: number;
   onboardingComplete: boolean;

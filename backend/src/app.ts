@@ -19,6 +19,8 @@ import { groupRoutes } from './routes/groups.js';
 import { communityRoutes } from './routes/community.js';
 import { authRoutes } from './routes/auth.js';
 import { notificationRoutes } from './routes/notifications.js';
+import { passkeyRoutes } from './routes/passkeys.js';
+import { emailRoutes } from './routes/emails.js';
 
 export function corsOriginHandler(
   origin: string | undefined,
@@ -235,6 +237,8 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
   await app.register(groupRoutes);
   await app.register(communityRoutes);
   await app.register(authRoutes);
+  await app.register(passkeyRoutes);
+  await app.register(emailRoutes);
   await app.register(notificationRoutes);
 
   return app;

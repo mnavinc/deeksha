@@ -6,6 +6,9 @@ import { isProfileComplete, useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { SwamisevaLogo } from '@/components/SwamisevaLogo';
+import { MalaSetupFields, type MalaStatus } from '@/components/MalaSetupFields';
+import { format } from '@/engines/dateUtils';
+import { computeMalaStartDate, resolveDeekshaDuration } from '@/engines/deekshaEngine';
 import { useI18n } from '@/i18n';
 import { sendProfileCompletionReminderNotification } from '@/utils/notifications';
 
@@ -30,6 +33,7 @@ export default function InviteScreen() {
   const profile = useAppStore((s) => s.profile);
   const joinSannidhanamByQr = useAppStore((s) => s.joinSannidhanamByQr);
   const completeProfileForPoints = useAppStore((s) => s.completeProfileForPoints);
+  const startDeeksha = useAppStore((s) => s.startDeeksha);
 
   const sannidhanamId = params.s || 'sannidhanam-demo';
   const sannidhanamName = params.n || 'Sri Ayyappa Sannidhanam';
@@ -43,6 +47,10 @@ export default function InviteScreen() {
   );
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [pilgrimageCount, setPilgrimageCount] = useState('1');
+  const [malaStatus, setMalaStatus] = useState<MalaStatus>('existing');
+  const [completedDays, setCompletedDays] = useState('0');
+  const [plannedStartDate, setPlannedStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [durationDays, setDurationDays] = useState('41');
   const [profileError, setProfileError] = useState('');
   const [joined, setJoined] = useState(false);
   const [pointsClaimed, setPointsClaimed] = useState(false);
@@ -119,6 +127,24 @@ export default function InviteScreen() {
         pilgrimageCount: parsedCount,
       });
     }
+
+    const resolvedDuration = resolveDeekshaDuration(
+      parsedCount,
+      parseInt(durationDays, 10)
+    );
+    const startDate = computeMalaStartDate({
+      malaStatus,
+      completedDays: parseInt(completedDays, 10) || 0,
+      plannedStartDate,
+    });
+    startDeeksha({
+      deekshaId: 'ayyappa',
+      pilgrimageCenter: 'Sabarimala',
+      malaDharanamDate: startDate,
+      durationDays: resolvedDuration,
+      pilgrimageCount: parsedCount,
+    });
+
     setPointsClaimed(true);
     setTimeout(() => {
       router.replace('/(tabs)/groups');
@@ -319,6 +345,19 @@ export default function InviteScreen() {
             styles.input,
             { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
           ]}
+        />
+
+        <MalaSetupFields
+          pilgrimageCount={Math.max(1, parseInt(pilgrimageCount, 10) || 1)}
+          malaStatus={malaStatus}
+          onChangeMalaStatus={setMalaStatus}
+          completedDays={completedDays}
+          onChangeCompletedDays={setCompletedDays}
+          plannedStartDate={plannedStartDate}
+          onChangePlannedStartDate={setPlannedStartDate}
+          durationDays={durationDays}
+          onChangeDurationDays={setDurationDays}
+          isTe={isTe}
         />
 
         {profileError ? (

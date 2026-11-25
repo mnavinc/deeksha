@@ -12,6 +12,7 @@ import { DailyChecklist } from '@/components/DailyChecklist';
 import { InteractiveJapamala } from '@/components/InteractiveJapamala';
 import { SacredCelebrationBurst } from '@/components/SacredCelebrationBurst';
 import { HeaderNav } from '@/components/HeaderNav';
+import { QuickMalaSetupCard } from '@/components/QuickMalaSetupCard';
 import { useThemeColors, useFontScale, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
@@ -60,7 +61,7 @@ export default function HomeScreen() {
     }
   }, [checkAllTasks, pulseAnim, reduceMotion]);
 
-  if (!enrollment || !profile) {
+  if (!profile) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
         <HeaderNav />
@@ -71,6 +72,17 @@ export default function HomeScreen() {
             <Text style={[styles.link, { color: colors.primary }]}>{t('startJourney')}</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  }
+
+  if (!enrollment) {
+    return (
+      <View style={[styles.page, { backgroundColor: colors.background }]}>
+        <HeaderNav />
+        <ScrollView contentContainerStyle={styles.content}>
+          <QuickMalaSetupCard />
+        </ScrollView>
       </View>
     );
   }

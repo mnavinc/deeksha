@@ -82,3 +82,32 @@ export function countCompletedDays(enrollment: DeekshaEnrollment): number {
     Object.values(log.checkpoints).some(Boolean)
   ).length;
 }
+
+export function resolveDeekshaDuration(pilgrimageCount: number, requestedDays?: number): number {
+  if (pilgrimageCount <= 1) return 41;
+  if (requestedDays && Number.isFinite(requestedDays) && requestedDays >= 1) {
+    return Math.min(Math.floor(requestedDays), 108);
+  }
+  return 41;
+}
+
+export function computeMalaStartDate(params: {
+  malaStatus: 'existing' | 'upcoming';
+  completedDays?: number;
+  plannedStartDate?: string;
+  referenceDate?: Date;
+}): string {
+  const ref = params.referenceDate ?? new Date();
+  if (params.malaStatus === 'existing') {
+    const completed = Math.max(0, Math.floor(params.completedDays ?? 0));
+    return format(addDays(ref, -completed), 'yyyy-MM-dd');
+  }
+  const trimmed = (params.plannedStartDate ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const parsed = new Date(`${trimmed}T00:00:00`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return trimmed;
+    }
+  }
+  return format(ref, 'yyyy-MM-dd');
+}

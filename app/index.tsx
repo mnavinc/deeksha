@@ -57,7 +57,7 @@ export default function IndexScreen() {
     }
 
     const timer = setTimeout(() => {
-      if (!profile?.onboardingComplete || !enrollment) {
+      if (!profile?.onboardingComplete) {
         // Pass detected device language to onboarding
         const deviceLang = getDeviceLanguage();
         if (!profile) {

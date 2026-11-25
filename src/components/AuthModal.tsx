@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -11,13 +12,28 @@ import {
   Keyboard,
   useColorScheme,
 } from 'react-native';
+import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { useI18n } from '@/i18n';
+import {
+  isAppleDevice,
+  isWebPasskeySupported,
+  loginWithAppleIdentityToken,
+  loginWithGoogleIdToken,
+  loginWithPasskey,
+  registerWithPasskey,
+  type AuthSessionResponse,
+} from '@/services/passkeyAuth';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const APPLE_CLIENT_ID = process.env.EXPO_PUBLIC_APPLE_CLIENT_ID ?? '';
 
 interface AuthModalProps {
   visible: boolean;
@@ -124,6 +140,100 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
       setLoading(false);
     }
   };
+
+  const applyAuthSession = async (data: AuthSessionResponse) => {
+    setAuth(data.token, {
+      id: data.user.id,
+      name: (data.user.name ?? name.trim()) || 'Swami',
+      ...(data.user.email ? { email: data.user.email } : {}),
+      ...(data.user.phone ? { phone: data.user.phone } : {}),
+      language: 'te',
+      pilgrimageCount: 1,
+      onboardingComplete: false,
+    });
+    await hydrateFromBackend();
+    onSuccess();
+  };
+
+  const handlePasskeyAuth = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    if (!isWebPasskeySupported()) {
+      setError('Passkey biometric prompt works in modern browsers (Safari/Chrome) or Passkey-enabled native builds.');
+      return;
+    }
+    if (mode === 'signup' && !name.trim()) {
+      setError('Please enter your Swami Name before creating a Passkey.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data =
+        mode === 'signup'
+          ? await registerWithPasskey({
+              displayName: name.trim(),
+              email: identifier.includes('@') ? identifier.trim().toLowerCase() : undefined,
+            })
+          : await loginWithPasskey();
+      await applyAuthSession(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Passkey authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialOAuth = async (provider: 'google' | 'apple') => {
+    setError(null);
+    setSuccessMsg(null);
+    const clientId = provider === 'google' ? GOOGLE_CLIENT_ID : APPLE_CLIENT_ID;
+    if (!clientId) {
+      setError(
+        provider === 'google'
+          ? 'Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to enable Google Sign-In.'
+          : 'Set EXPO_PUBLIC_APPLE_CLIENT_ID to enable Sign in with Apple.'
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const redirectUri =
+        Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin
+          ? `${window.location.origin}/onboarding/welcome`
+          : 'deekshajourney://auth';
+      const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const authUrl =
+        provider === 'google'
+          ? `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent('openid email profile')}&nonce=${encodeURIComponent(nonce)}`
+          : `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code%20id_token&response_mode=fragment&scope=${encodeURIComponent('name email')}&nonce=${encodeURIComponent(nonce)}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      if (result.type !== 'success' || !result.url) {
+        setLoading(false);
+        return;
+      }
+
+      const fragment = result.url.includes('#') ? result.url.split('#')[1] : result.url.split('?')[1] ?? '';
+      const params = new URLSearchParams(fragment);
+      const idToken = params.get('id_token');
+      if (!idToken) {
+        throw new Error('No ID token returned from provider.');
+      }
+
+      const data =
+        provider === 'google'
+          ? await loginWithGoogleIdToken(idToken)
+          : await loginWithAppleIdentityToken({ identityToken: idToken });
+      await applyAuthSession(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `${provider} sign-in failed.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applePreferred = isAppleDevice();
 
   const handleQuickTestLogin = async () => {
     setError(null);
@@ -269,6 +379,45 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
                   </TouchableOpacity>
 
                   <TouchableOpacity
+                    style={[styles.passkeyBtn, { backgroundColor: `${colors.primary}18`, borderColor: colors.primary }]}
+                    onPress={handlePasskeyAuth}
+                    disabled={loading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue with Passkey"
+                  >
+                    <Ionicons name="finger-print" size={20} color={colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.passkeyTitle, { color: colors.text }]}>
+                        {mode === 'signup' ? 'Create Passkey (Recommended)' : 'Sign in with Passkey'}
+                      </Text>
+                      <Text style={[styles.passkeySub, { color: colors.textMuted }]}>
+                        Biometric · Synced via Apple/Google Cloud · Phishing-resistant
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.oauthRow}>
+                    {applePreferred && (
+                      <TouchableOpacity
+                        style={[styles.oauthBtn, { backgroundColor: '#000000', borderColor: colors.border }]}
+                        onPress={() => void handleSocialOAuth('apple')}
+                        disabled={loading}
+                      >
+                        <Ionicons name="logo-apple" size={16} color="#FFFFFF" />
+                        <Text style={[styles.oauthBtnText, { color: '#FFFFFF' }]}>Apple</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={[styles.oauthBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      onPress={() => void handleSocialOAuth('google')}
+                      disabled={loading}
+                    >
+                      <Ionicons name="logo-google" size={15} color={colors.text} />
+                      <Text style={[styles.oauthBtnText, { color: colors.text }]}>Google</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity
                     style={[styles.demoBtn, { borderColor: colors.border, backgroundColor: colors.background }]}
                     onPress={handleQuickTestLogin}
                     disabled={loading}
@@ -278,6 +427,17 @@ export function AuthModal({ visible, onClose, onSuccess }: AuthModalProps) {
                       Quick Test Login (test@deeksha.app)
                     </Text>
                   </TouchableOpacity>
+
+                  <View style={styles.legalRow}>
+                    <Text style={[styles.legalText, { color: colors.textDim }]}>By continuing, you agree to our </Text>
+                    <TouchableOpacity onPress={() => { onClose(); router.push('/terms' as any); }}>
+                      <Text style={[styles.legalLink, { color: colors.primary }]}>Terms</Text>
+                    </TouchableOpacity>
+                    <Text style={[styles.legalText, { color: colors.textDim }]}> &amp; </Text>
+                    <TouchableOpacity onPress={() => { onClose(); router.push('/privacy' as any); }}>
+                      <Text style={[styles.legalLink, { color: colors.primary }]}>Privacy Policy</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
                 <View style={styles.form}>
@@ -451,4 +611,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  passkeyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  passkeyTitle: { fontSize: 13, fontWeight: '800' },
+  passkeySub: { fontSize: 10.5, marginTop: 1 },
+  oauthRow: { flexDirection: 'row', gap: 8 },
+  oauthBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  oauthBtnText: { fontSize: 13, fontWeight: '700' },
+  legalRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', marginTop: 2 },
+  legalText: { fontSize: 11 },
+  legalLink: { fontSize: 11, fontWeight: '700', textDecorationLine: 'underline' },
 });

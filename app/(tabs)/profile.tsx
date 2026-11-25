@@ -1,7 +1,9 @@
-import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
+import { isWebPasskeySupported, registerWithPasskey, syncProfileContactInfo } from '@/services/passkeyAuth';
 import { getSwamiTier } from '@/data/swamiNames';
 import { getDeekshaType } from '@/data/deekshaTypes';
 import { getVruthamEndDate } from '@/engines/deekshaEngine';
@@ -9,6 +11,7 @@ import { format } from '@/engines/dateUtils';
 import { useThemeColors, spacing } from '@/theme/colors';
 import { getClayStyle } from '@/theme/claymorphism';
 import { HeaderNav } from '@/components/HeaderNav';
+import { QuickMalaSetupCard } from '@/components/QuickMalaSetupCard';
 import { useI18n } from '@/i18n';
 
 export default function ProfileScreen() {
@@ -29,10 +32,60 @@ export default function ProfileScreen() {
   const toggleReduceMotion = useAppStore((s) => s.toggleReduceMotion);
   const totalPoints = useAppStore((s) => s.totalPoints);
   const pendingPoints = useAppStore((s) => s.pendingPoints);
+  const authToken = useAppStore((s) => s.authToken);
+  const setProfile = useAppStore((s) => s.setProfile);
   const signOut = useAppStore((s) => s.signOut);
   const { t, language } = useI18n();
   const colors = useThemeColors();
   const activeTheme = theme === 'system' ? 'dark' : theme;
+
+  const [phoneInput, setPhoneInput] = useState(p?.phone ?? '');
+  const [emailInput, setEmailInput] = useState(p?.email ?? '');
+  const [newsletterOptIn, setNewsletterOptIn] = useState(Boolean(p?.newsletterSubscribed));
+  const [contactSavedMsg, setContactSavedMsg] = useState('');
+  const [passkeyMsg, setPasskeyMsg] = useState('');
+
+  const handleSaveContactInfo = async () => {
+    if (!p) return;
+    const cleanPhone = phoneInput.trim();
+    const cleanEmail = emailInput.trim().toLowerCase();
+    setProfile({
+      ...p,
+      phone: cleanPhone || undefined,
+      email: cleanEmail || undefined,
+      newsletterSubscribed: newsletterOptIn,
+    });
+    if (authToken) {
+      await syncProfileContactInfo(authToken, {
+        displayName: p.name,
+        language: p.language,
+        email: cleanEmail || null,
+        phone: cleanPhone || null,
+        newsletterSubscribed: newsletterOptIn,
+      });
+    }
+    setContactSavedMsg(language === 'te' ? 'సంప్రదింపు వివరాలు సేవ్ చేయబడ్డాయి ✓' : 'Profile contact info saved ✓');
+  };
+
+  const handleAddPasskey = async () => {
+    if (!p) return;
+    setPasskeyMsg('');
+    if (!isWebPasskeySupported()) {
+      setPasskeyMsg('Open Swamiseva in Safari/Chrome to register a cloud-synced Passkey.');
+      return;
+    }
+    try {
+      await registerWithPasskey({
+        displayName: p.name,
+        email: emailInput.trim() || p.email,
+        phone: phoneInput.trim() || p.phone,
+        authToken,
+      });
+      setPasskeyMsg('Passkey registered & synced with your device cloud ✓');
+    } catch (err) {
+      setPasskeyMsg(err instanceof Error ? err.message : 'Could not register Passkey.');
+    }
+  };
 
   const performSignOut = () => {
     signOut();
@@ -57,7 +110,7 @@ export default function ProfileScreen() {
     }
   };
 
-  if (!p || !e) {
+  if (!p) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
         <HeaderNav />
@@ -68,6 +121,17 @@ export default function ProfileScreen() {
             <Text style={[styles.startLink, { color: colors.primary }]}>{t('beginJourney')}</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  }
+
+  if (!e) {
+    return (
+      <View style={[styles.page, { backgroundColor: colors.background }]}>
+        <HeaderNav />
+        <ScrollView contentContainerStyle={styles.content}>
+          <QuickMalaSetupCard />
+        </ScrollView>
       </View>
     );
   }
@@ -268,6 +332,83 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Profile Contact Information (Mobile & Email) */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.textDim }]}>PROFILE CONTACT INFORMATION</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'left', marginTop: 0 }]}>
+            {language === 'te'
+              ? 'మొబైల్ & ఇమెయిల్ మీ ప్రొఫైల్ మరియు వార్తాలేఖల కోసం మాత్రమే.'
+              : 'Mobile number & email are stored as your profile info (optional newsletters).'}
+          </Text>
+          <TextInput
+            value={phoneInput}
+            onChangeText={(txt) => { setPhoneInput(txt); setContactSavedMsg(''); }}
+            keyboardType="phone-pad"
+            placeholder={language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}
+            placeholderTextColor={colors.textDim}
+            style={[styles.profileInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+          />
+          <TextInput
+            value={emailInput}
+            onChangeText={(txt) => { setEmailInput(txt); setContactSavedMsg(''); }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="Email Address (for Resend Welcome & Newsletters)"
+            placeholderTextColor={colors.textDim}
+            style={[styles.profileInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+          />
+          <View style={[styles.rowBetween, { marginTop: 4 }]}>
+            <Text style={[styles.value, { color: colors.text, fontSize: 13 }]}>
+              {language === 'te' ? 'దీక్షా న్యూస్‌లెటర్ (Resend)' : 'Receive Swamiseva Newsletters'}
+            </Text>
+            <Switch value={newsletterOptIn} onValueChange={setNewsletterOptIn} />
+          </View>
+          <TouchableOpacity
+            style={[styles.smallPrimaryBtn, { backgroundColor: colors.primary }]}
+            onPress={() => void handleSaveContactInfo()}
+          >
+            <Text style={styles.smallPrimaryBtnText}>
+              {language === 'te' ? 'ప్రొఫైల్ వివరాలు సేవ్ చేయండి' : 'Save Contact Info'}
+            </Text>
+          </TouchableOpacity>
+          {contactSavedMsg ? (
+            <Text style={{ color: colors.success, fontSize: 12, fontWeight: '700' }}>{contactSavedMsg}</Text>
+          ) : null}
+        </View>
+
+        {/* Passkey Security Card */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.textDim }]}>PASSKEY SECURITY</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted, textAlign: 'left', marginTop: 0 }]}>
+            Phishing-resistant biometric key synced via Apple iCloud Keychain or Google Password Manager.
+          </Text>
+          <TouchableOpacity
+            style={[styles.smallOutlineBtn, { borderColor: colors.primary }]}
+            onPress={() => void handleAddPasskey()}
+          >
+            <Ionicons name="finger-print" size={16} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+              Register Passkey for This Device
+            </Text>
+          </TouchableOpacity>
+          {passkeyMsg ? (
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>{passkeyMsg}</Text>
+          ) : null}
+        </View>
+
+        {/* Legal & Policies */}
+        <View style={[styles.card, getClayStyle(activeTheme, 'low'), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.textDim }]}>LEGAL &amp; POLICIES</Text>
+          <View style={styles.langRow}>
+            <TouchableOpacity style={[styles.chip, { borderColor: colors.border }]} onPress={() => router.push('/terms' as any)}>
+              <Text style={[styles.chipText, { color: colors.primary, fontWeight: '700' }]}>Terms &amp; Conditions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.chip, { borderColor: colors.border }]} onPress={() => router.push('/privacy' as any)}>
+              <Text style={[styles.chipText, { color: colors.primary, fontWeight: '700' }]}>{t('privacyPolicy')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Complete Deeksha */}
         {e.status === 'active' && (
           <TouchableOpacity style={[styles.completeBtn, { backgroundColor: colors.primary }]} onPress={complete}>
@@ -311,6 +452,31 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 13 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  profileInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  smallPrimaryBtn: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  smallPrimaryBtnText: { color: '#0D1117', fontSize: 13, fontWeight: '800' },
+  smallOutlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginTop: 4,
+  },
   completeBtn: {
     padding: 14, borderRadius: 14, alignItems: 'center',
   },
